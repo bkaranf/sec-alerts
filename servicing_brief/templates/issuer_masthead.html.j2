@@ -1,0 +1,29 @@
+{# Shared company first masthead for standalone and compiled brief surfaces. #}
+{% macro issuer_masthead(ticker, name, period, date_label, date, brand) -%}
+{% set theme = brand.theme|default({}, true) %}
+{% set rule_color = theme.rule_color|default('#dce1e6', true) %}
+{% set paper_bg = theme.paper_bg|default('#fcfbf8', true) %}
+{% set heading_color = theme.heading_color|default('#171c22', true) %}
+{% set secondary_color = theme.secondary_color|default('#606b75', true) %}
+<table role="presentation" class="issuer-masthead" data-brand-surface="paper" width="100%" cellpadding="0" cellspacing="0" style="width:100%;margin:4px 0 0;border-top:1px solid {{ rule_color }};background:{{ paper_bg }};font-family:'Segoe UI',Arial,Helvetica,sans-serif;color:{{ heading_color }};">
+  <tr>
+    {% if brand and brand.verified %}
+    <td valign="middle" style="padding:10px 8px 8px 0;vertical-align:middle;font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
+      <p class="issuer-name" style="margin:0;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:22px;line-height:1.18;font-weight:600;letter-spacing:-0.2px;color:{{ heading_color }};">{{ name }}</p>
+    </td>
+    <td align="right" valign="middle" style="width:104px;padding:10px 0 8px 8px;text-align:right;vertical-align:middle;font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
+      <img data-brand-ticker="{{ ticker }}" data-brand-logo-description="{{ brand.logo_alt|default('', true) }}" src="{{ brand.logo_src }}" alt="" aria-hidden="true" width="{{ brand.width }}" height="{{ brand.height }}" style="display:block;width:auto;max-width:104px;height:auto;max-height:36px;margin:0 0 0 auto;border:0;">
+    </td>
+    {% else %}
+    <td colspan="2" valign="middle" style="padding:10px 0 8px;vertical-align:middle;font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
+      <p class="issuer-name" style="margin:0;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:22px;line-height:1.18;font-weight:600;letter-spacing:-0.2px;color:{{ heading_color }};">{{ name }}</p>
+    </td>
+    {% endif %}
+  </tr>
+  <tr>
+    <td colspan="2" style="padding:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
+      <p class="issuer-meta" style="margin:0;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.35;font-weight:400;color:{{ secondary_color }};">{{ ticker }}{% if period %} · {{ period }}{% endif %}{% if date_label %} · {{ date_label }}{% endif %}{% if date %} {{ date }}{% endif %}</p>
+    </td>
+  </tr>
+</table>
+{%- endmacro %}

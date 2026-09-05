@@ -1,0 +1,38 @@
+[project]
+name = "mortgage-servicing-brief"
+version = "0.1.0"
+description = "Evidence-backed mortgage servicing disclosure monitoring and email briefings"
+requires-python = ">=3.12"
+dependencies = [
+  "edgartools>=5.0,<6",
+  "httpx>=0.28,<1",
+  "beautifulsoup4>=4.13,<5",
+  "jinja2>=3.1,<4",
+  "pymupdf>=1.26,<2",
+  "filelock>=3.18,<4",
+  "tzdata>=2025.2",
+]
+
+[project.optional-dependencies]
+ai = ["openai>=2,<3"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10"]
+
+[project.scripts]
+servicing-brief = "servicing_brief.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["servicing_brief"]
+
+[tool.uv]
+link-mode = "copy"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["live: explicit network smoke tests (excluded by default)"]
+addopts = "-m 'not live'"

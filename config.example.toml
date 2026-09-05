@@ -1,0 +1,155 @@
+# Copy this file to config.toml and set one explicit recipient before using
+# --send. Keep credentials in environment variables; this file is safe to
+# commit and contains only public watchlist/source settings.
+
+[storage]
+path = "data"
+
+[sources]
+# Filing and IR lookback is bounded and repeated with this overlap so delayed
+# SEC indexing or a transient failed run can be recovered.
+lookback_days = 120
+overlap_days = 14
+bootstrap_lookback_days = 450
+max_sec_filings_per_company = 30
+max_relevant_8k_per_company = 10
+max_periodic_exhibits = 0
+max_assets_per_exhibit = 48
+max_ir_pages = 8
+max_ir_documents = 16
+max_ir_retries = 2
+ir_timeout = 20.0
+max_ir_document_bytes = 31457280
+lock_timeout = 0.0
+ir_user_agent = "mortgage-servicing-brief/0.1 (+official-source-collection)"
+
+[email]
+# Fill these explicitly for delivery. Gmail uses an app password in
+# SMTP_PASSWORD; ordinary account passwords are not accepted by Gmail.
+sender = ""
+recipient = ""
+smtp_host = "smtp.gmail.com"
+smtp_port = 465
+smtp_security = "ssl"
+smtp_username = ""
+smtp_password_env = "SMTP_PASSWORD"
+max_message_bytes = 15728640
+
+[ai]
+enabled = false
+model = ""
+prompt_version = "servicing-brief-v1"
+# Optional narrative generation is bounded per pipeline run.  The worker
+# enforces the hard caps even when a larger value is supplied at runtime.
+max_requests_per_run = 4
+max_input_chars = 14000
+max_output_chars = 1200
+retries = 1
+
+[schedule]
+timezone = "America/New_York"
+times = ["07:00", "18:00"]
+enabled = false
+
+# Core proof set: Truist and PennyMac Financial Services.
+[[companies]]
+ticker = "TFC"
+name = "Truist Financial Corporation"
+cik = "0000092230"
+enabled = true
+ir_url = "https://ir.truist.com/earnings"
+ir_pages = ["https://ir.truist.com/earnings", "https://ir.truist.com/events-and-presentation"]
+reporting_boundary = "Diversified bank; report mortgage servicing separately from mortgage production and consolidated bank results."
+
+[[companies]]
+ticker = "PFSI"
+name = "PennyMac Financial Services, Inc."
+cik = "0001745916"
+enabled = true
+ir_url = "https://pfsi.pennymac.com/news-events/quarterly-earnings/default.aspx"
+ir_pages = ["https://pfsi.pennymac.com/news-events/quarterly-earnings/default.aspx", "https://pfsi.pennymac.com/news-events/press-releases/default.aspx"]
+reporting_boundary = "Mortgage specialist; distinguish servicing, fulfillment/origination, and investment-management results."
+
+# Added after the TFC/PFSI proof set.
+[[companies]]
+ticker = "WFC"
+name = "Wells Fargo & Company"
+cik = "0000072971"
+enabled = true
+ir_url = "https://www.wellsfargo.com/about/investor-relations/quarterly-earnings/"
+ir_pages = ["https://www.wellsfargo.com/about/investor-relations/quarterly-earnings/"]
+reporting_boundary = "Diversified bank; mortgage banking and servicing disclosures must be separated from consolidated results."
+
+[[companies]]
+ticker = "RKT"
+name = "Rocket Companies, Inc."
+cik = "0001805284"
+enabled = true
+ir_url = "https://ir.rocketcompanies.com/news-and-events/events-and-presentations/default.aspx"
+ir_pages = ["https://ir.rocketcompanies.com/news-and-events/events-and-presentations/default.aspx", "https://ir.rocketcompanies.com/financial-information/quarterly-results/default.aspx"]
+reporting_boundary = "Rocket completed its Mr. Cooper acquisition on 2025-10-01; current Rocket reporting includes the acquired servicing platform. Do not double count legacy COOP."
+
+# Expansion candidates are retained here for identity/boundary review. Set
+# enabled=true only after reviewing current SEC status and IR coverage.
+[[companies]]
+ticker = "JPM"
+name = "JPMorgan Chase & Co."
+cik = "0000019617"
+enabled = false
+ir_url = "https://www.jpmorganchase.com/ir/quarterly-earnings"
+ir_pages = ["https://www.jpmorganchase.com/ir/quarterly-earnings"]
+reporting_boundary = "Diversified bank; candidate pending servicing-specific disclosure review."
+
+[[companies]]
+ticker = "BAC"
+name = "Bank of America Corporation"
+cik = "0000070858"
+enabled = false
+ir_url = "https://investor.bankofamerica.com/"
+ir_pages = ["https://investor.bankofamerica.com/"]
+reporting_boundary = "Diversified bank; candidate pending servicing-specific disclosure review."
+
+[[companies]]
+ticker = "USB"
+name = "U.S. Bancorp"
+cik = "0000036104"
+enabled = false
+ir_url = "https://ir.usbank.com/"
+ir_pages = ["https://ir.usbank.com/"]
+reporting_boundary = "Diversified bank; candidate pending servicing-specific disclosure review."
+
+[[companies]]
+ticker = "UWMC"
+name = "UWM Holdings Corporation"
+cik = "0001783398"
+enabled = false
+ir_url = "https://investors.uwm.com/"
+ir_pages = ["https://investors.uwm.com/"]
+reporting_boundary = "Mortgage originator/servicer candidate; Q2 2026 page reviewed with Q1 deck stale, so period matching is required."
+
+[[companies]]
+ticker = "RITM"
+name = "Rithm Capital Corp."
+cik = "0001556593"
+enabled = false
+ir_url = "https://ir.rithmcap.com/overview/default.aspx"
+ir_pages = ["https://ir.rithmcap.com/overview/default.aspx"]
+reporting_boundary = "Mortgage and real-estate finance candidate; IR page is dynamic and requires live link verification."
+
+[[companies]]
+ticker = "ONIT"
+name = "Onity Group Inc."
+cik = "0000873860"
+enabled = false
+ir_url = "https://shareholders.onitygroup.com/"
+ir_pages = ["https://shareholders.onitygroup.com/"]
+reporting_boundary = "Onity Mortgage Corporation is the primary operating mortgage subsidiary; legacy PHH links require boundary review."
+
+[[companies]]
+ticker = "LDI"
+name = "loanDepot, Inc."
+cik = "0001831631"
+enabled = false
+ir_url = "https://investors.loandepot.com/"
+ir_pages = ["https://investors.loandepot.com/"]
+reporting_boundary = "Mortgage originator/servicer candidate pending current SEC and IR identity review."

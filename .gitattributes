@@ -1,0 +1,4 @@
+* text=auto
+tests/fixtures/** -text
+assets/brands/** -text
+servicing_brief/assets/** -text

@@ -1,0 +1,421 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "pfsi-q226-retention",
+      "title": "Prepayments and arrears",
+      "text": "Owned-portfolio prepayments slowed to 11.6% CPR from 13.7% in Q1. Separately, 60+ day delinquency declined to 4.1% from 4.2% by loan count in that portfolio.",
+      "sources": [
+        {
+          "content_hash": "6414e887fe4f318d4480a23739a06ca24e746d07fd386c0f523d005d728a6524",
+          "period": "2026-Q2",
+          "kind": "presentation",
+          "location": "Presentation, slide 13: Selected Operational Metrics and footnote 2",
+          "asset_hashes": [
+            "dca7cd0f41420aa89b2fd2b1faa54731a1ffc926af81ec768e592bec4eb515b4"
+          ]
+        }
+      ],
+      "supporting_review": {
+        "id": "pfsi-portfolio-behavior-and-workload",
+        "period": "2026-Q2",
+        "period_end": "2026-06-30",
+        "source_types": [
+          "presentation",
+          "10-Q"
+        ],
+        "headline": "Production offset runoff, but stock, rate and flow measures describe different servicing exposures.",
+        "investor_read": "Management says production more than offset prepayment activity and the servicing stock continued to grow. The same slide shows a lower owned-portfolio CPR and a slightly lower owned 60+ delinquency rate quarter over quarter, alongside higher completed-modification and EBO volumes. Treat UPB and loans serviced as period-end stocks, CPR and delinquency as rates, and modifications/EBO as period flows.",
+        "analyst_interpretation": "The combination is useful for workload monitoring: slower prepayment runoff supports portfolio retention, while modification and early-buyout activity can still change operational workload. The interpretation does not imply that any one measure caused quarterly profit.",
+        "speaker": null,
+        "speaker_note": "The static deck has no speaker attribution; quotations are attributed to the issuer presentation.",
+        "figures": [
+          {
+            "label": "Owned MSRs and MSLs",
+            "value": "488.097617",
+            "raw_value": "488,097,617",
+            "unit": "USD_billions",
+            "measure_type": "stock",
+            "definition": "Period-end owned mortgage servicing rights and liabilities, excluding loans held for sale.",
+            "source_location": "10-Q HTML table 235, rows 7-13"
+          },
+          {
+            "label": "Loans held for sale within owned servicing population",
+            "value": "7.656960",
+            "raw_value": "7,656,960",
+            "unit": "USD_billions",
+            "measure_type": "stock",
+            "definition": "Period-end loans held for sale shown separately from owned MSRs/MSLs in the 10-Q servicing portfolio table.",
+            "source_location": "10-Q HTML table 235, row 12"
+          },
+          {
+            "label": "Subserviced portfolio",
+            "value": "235.314288",
+            "raw_value": "235,314,288",
+            "unit": "USD_billions",
+            "measure_type": "stock",
+            "definition": "Period-end subservicing for PMT, non-affiliates and interim servicing.",
+            "source_location": "10-Q HTML table 235, rows 14-18"
+          },
+          {
+            "label": "Total loans serviced",
+            "value": "731.068865",
+            "raw_value": "731,068,865",
+            "unit": "USD_billions",
+            "measure_type": "stock",
+            "definition": "Period-end total of the owned population, loans held for sale and subservicing population.",
+            "source_location": "10-Q HTML table 235, row 19"
+          },
+          {
+            "label": "Loans serviced",
+            "value": "2753",
+            "raw_value": "2,753",
+            "unit": "thousands_of_loans",
+            "measure_type": "stock",
+            "definition": "Selected operational metric at 2Q26 period end.",
+            "source_location": "Presentation HTML table 13, Servicing Segment Highlights, Slide 13"
+          },
+          {
+            "label": "Owned-portfolio 60+ delinquency rate",
+            "value": "4.1",
+            "raw_value": "4.1%",
+            "unit": "percent",
+            "measure_type": "rate",
+            "definition": "Presentation metric based on loan count, not UPB; owned portfolio is predominantly government-insured or guaranteed.",
+            "source_location": "Presentation HTML table 13, Slide 13 footnote (2)"
+          },
+          {
+            "label": "Owned-portfolio actual CPR",
+            "value": "11.6",
+            "raw_value": "11.6%",
+            "unit": "percent",
+            "measure_type": "rate",
+            "definition": "Actual conditional prepayment rate for the owned portfolio.",
+            "source_location": "Presentation HTML table 13, Selected Operational Metrics, Slide 13"
+          },
+          {
+            "label": "Completed modifications UPB",
+            "value": "2850",
+            "raw_value": "$2,850",
+            "unit": "USD_millions",
+            "measure_type": "flow",
+            "definition": "UPB of completed modifications during the quarter; the slide footnote includes loss-mitigation efforts associated with partial-claims programs.",
+            "source_location": "Presentation HTML table 13, Selected Operational Metrics, Slide 13"
+          },
+          {
+            "label": "EBO loan volume",
+            "value": "1218",
+            "raw_value": "$1,218",
+            "unit": "USD_millions",
+            "measure_type": "flow",
+            "definition": "Early buyouts of delinquent loans from Ginnie Mae pools during the period.",
+            "source_location": "Presentation HTML table 13, Selected Operational Metrics, Slide 13 footnote (4)"
+          }
+        ],
+        "evidence": [
+          {
+            "document_id": "43e7006110e06de1ae1db8b4",
+            "location": "Presentation HTML table 13, Servicing Segment Highlights, Slide 13, bullets",
+            "quote": "Production volumes more than offset prepayment activity, leading to continued portfolio growth",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-2.htm",
+            "asset_slide": 13
+          },
+          {
+            "document_id": "43e7006110e06de1ae1db8b4",
+            "location": "Presentation HTML table 13, Servicing Segment Highlights, Slide 13, selected operational metrics",
+            "quote": "60+ day delinquency rate for owned MSR was down slightly from the prior quarter",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-2.htm",
+            "asset_slide": 13
+          },
+          {
+            "document_id": "43e7006110e06de1ae1db8b4",
+            "location": "Presentation HTML table 13, Servicing Segment Highlights, Slide 13, selected operational metrics",
+            "quote": "Modification volume and EBO loan volume increased from the prior quarter",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-2.htm",
+            "asset_slide": 13
+          },
+          {
+            "document_id": "7569a73a88b446ddfaccc3de",
+            "location": "10-Q HTML table 235, rows 7-19, following \"Following is a summary of our loan servicing portfolio\"",
+            "quote": "Total loans serviced | $ | 731,068,865 | $ | 733,613,822",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
+            "printed_page": "70"
+          },
+          {
+            "document_id": "7569a73a88b446ddfaccc3de",
+            "location": "10-Q HTML text line 3101, MD&A Servicing",
+            "quote": "Servicing expenses increased $14.2 million and $30.6 million during the quarter and six months ended June 30, 2026, respectively, compared to the same periods in 2025. The increase was primarily due to increases in provision for losses on servicing advances resulting from higher delinquent loan balances reflecting a larger servicing portfolio and a larger proportion of delinquencies of 90 days or greater.",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
+            "printed_page": "71"
+          },
+          {
+            "document_id": "43e7006110e06de1ae1db8b4",
+            "location": "Presentation HTML table 22, Delinquency Trends and Servicing Advances Outstanding, Slide 22",
+            "quote": "Servicing advances outstanding for PFSI’s MSR portfolio were approximately $526 million at June 30, 2026, down from $545 million at March 31, 2026 due to a smaller percentage of later-stage delinquencies",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-2.htm",
+            "asset_slide": 22
+          }
+        ],
+        "qualification": "The 4.1% presentation delinquency metric is loan-count based, while the 10-Q also discloses UPB-based delinquency by loan type. Do not compare them as if they were the same denominator. The 731.068865 billion total is a period-end stock; modifications and EBO are period flows."
+      },
+      "cik": "0001745916",
+      "report_period": "2026-Q2",
+      "review_method": "Astra editorial selection; independent source review; source hash and original slide verification",
+      "statement_type": "source_summary"
+    },
+    {
+      "id": "pfsi-q226-liquidity",
+      "title": "Cash and borrowing capacity",
+      "text": "PennyMac reported $4.0bn of companywide liquidity, including cash and borrowing capacity against pledged collateral. The 10-Q says margin calls generally must be met the same day or within one business day.",
+      "sources": [
+        {
+          "content_hash": "6414e887fe4f318d4480a23739a06ca24e746d07fd386c0f523d005d728a6524",
+          "period": "2026-Q2",
+          "kind": "presentation",
+          "location": "Presentation, slide 16: Strong Balance Sheet and Diverse Capital Structures",
+          "asset_hashes": [
+            "133aca190fc528bee3289ff7d66058efecac547468f9a55a85f6cc3487ec386b"
+          ]
+        },
+        {
+          "content_hash": "9b0062e5c2d62e2abe50a89a5b6f606140d6eaee6e3ef27ee824529292642155",
+          "period": "2026-Q2",
+          "kind": "10-Q",
+          "location": "10-Q, Liquidity and Capital Resources, printed page 74; HTML text line 3161",
+          "asset_hashes": []
+        }
+      ],
+      "supporting_review": {
+        "id": "pfsi-capital-liquidity-and-collateral",
+        "period": "2026-Q2",
+        "period_end": "2026-06-30",
+        "source_types": [
+          "presentation",
+          "10-Q"
+        ],
+        "headline": "The reported liquidity buffer is collateral-dependent and sits alongside short-term refinancing and margin-call requirements.",
+        "investor_read": "The presentation reports $4.0 billion of total liquidity including cash and amounts available to draw with collateral pledged, and describes a diverse MSR and servicing-advance financing structure. The 10-Q explains that a significant amount of borrowings has 30-to-364-day maturities, that facilities are renewed ahead of maturity, and that a lender can require cash or additional collateral for a margin deficit on the notice date or within one business day.",
+        "analyst_interpretation": "The $4.0 billion figure is total company liquidity, not cash-only liquidity and not servicing-only liquidity. For oversight, the relevant watch points are collateral availability, facility renewals, margin-call timing and the split between MSR financing and production inventory financing.",
+        "speaker": null,
+        "figures": [
+          {
+            "label": "Total liquidity including cash and amounts available to draw with collateral pledged",
+            "value": "4.0",
+            "unit": "USD_billions",
+            "measure_type": "stock",
+            "definition": "Management presentation total at June 30, 2026; includes cash and draw capacity with collateral pledged.",
+            "source_location": "Presentation HTML table 16, Strong Balance Sheet and Diverse Capital Structures, Slide 16"
+          },
+          {
+            "label": "Term Notes issued May 27, 2026",
+            "value": "300",
+            "unit": "USD_millions",
+            "measure_type": "financing_event",
+            "definition": "Term Notes issued at a 2.25% spread and due in May 2031.",
+            "source_location": "10-Q HTML text line 3156"
+          },
+          {
+            "label": "MSR notes and term-loan debt carrying value",
+            "value": "1425.888",
+            "raw_value": "1,425,888",
+            "unit": "USD_millions",
+            "measure_type": "stock",
+            "definition": "Notes payable secured by mortgage servicing assets at June 30, 2026, net of debt issuance costs.",
+            "source_location": "10-Q HTML table 175, carrying-value row"
+          },
+          {
+            "label": "Servicing advances pledged to secure MSR notes",
+            "value": "390.814",
+            "raw_value": "390,814",
+            "unit": "USD_millions",
+            "measure_type": "stock",
+            "definition": "Assets pledged to secure notes payable at June 30, 2026; not total servicing advances on the balance sheet.",
+            "source_location": "10-Q HTML table 175, assets pledged row"
+          }
+        ],
+        "evidence": [
+          {
+            "document_id": "43e7006110e06de1ae1db8b4",
+            "location": "Presentation HTML table 16, Strong Balance Sheet and Diverse Capital Structures, Slide 16",
+            "quote": "As of June 30, 2026 total liquidity including cash and amounts available to draw with collateral pledged was $4.0 billion",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-2.htm",
+            "asset_slide": 16
+          },
+          {
+            "document_id": "43e7006110e06de1ae1db8b4",
+            "location": "Presentation HTML table 16, Strong Balance Sheet and Diverse Capital Structures, Slide 16",
+            "quote": "Unsecured senior notes enhance liquidity at low, fixed interest rates; first maturity in February 2029",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-2.htm",
+            "asset_slide": 16
+          },
+          {
+            "document_id": "7569a73a88b446ddfaccc3de",
+            "location": "10-Q HTML text line 3153, Liquidity and Capital Resources",
+            "quote": "A significant amount of our borrowings have short-term maturities and provide for advances with terms ranging from 30 days to 364 days. Because a significant portion of our current debt facilities consist of short-term debt, we expect to renew these facilities in advance of maturity in order to ensure our ongoing liquidity and access to capital or otherwise allow ourselves sufficient time to replace any necessary financing.",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
+            "printed_page": "74"
+          },
+          {
+            "document_id": "7569a73a88b446ddfaccc3de",
+            "location": "10-Q HTML text line 3155, Liquidity and Capital Resources",
+            "quote": "Secured debt facilities for MSRs and servicing advances take various forms. Fannie Mae MSRs, Ginnie Mae MSRs and servicing advances may be pledged to special purpose entities, each of which may issue variable funding notes (“VFNs”) and term notes and term loans that are secured by such Ginnie Mae or Fannie Mae assets.",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
+            "printed_page": "74"
+          },
+          {
+            "document_id": "7569a73a88b446ddfaccc3de",
+            "location": "10-Q HTML text line 3156, Liquidity and Capital Resources",
+            "quote": "On May 27, 2026, the Company, through its wholly-owned subsidiaries PNMAC, PLS and the Issuer Trust, issued $300 million in Term Notes with a spread of 2.25% due in May 2031 and partially redeemed $300 million Term Notes in with a spread of 3.20% due in March 2029.",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
+            "printed_page": "74"
+          },
+          {
+            "document_id": "7569a73a88b446ddfaccc3de",
+            "location": "10-Q HTML text line 3161, Liquidity and Capital Resources",
+            "quote": "Upon notice from the applicable lender, we will generally be required to satisfy the margin call on the day of such notice or within one business day thereafter, depending on the timing of the notice.",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
+            "printed_page": "74"
+          }
+        ],
+        "qualification": "The slide’s liquidity figure is a management-reported total with collateral and draw capacity. The 10-Q’s short-term maturity and margin-call language describes structural funding requirements; it does not state that a margin call occurred in Q2."
+      },
+      "cik": "0001745916",
+      "report_period": "2026-Q2",
+      "review_method": "Astra editorial selection; independent source review; source hash and original slide verification",
+      "statement_type": "source_summary"
+    },
+    {
+      "id": "pfsi-q226-annual-risk-context",
+      "cik": "0001745916",
+      "report_period": "2026-Q2",
+      "title": "Advance recovery (FY2025)",
+      "text": "Regulatory actions can increase servicing advances and delay reimbursement. The annual filing also describes allowances for advances not expected to be recovered from insurers, guarantors or beneficial-interest holders. This is continuing risk context, not a new problem reported this quarter.",
+      "statement_type": "historical_structural_risk",
+      "review_method": "Astra editorial selection; independent source review; exact annual text and source hash verified",
+      "sources": [
+        {
+          "content_hash": "bc2ebcde63126b5bd400a4c415dafcaf00adb1ded456f309dc2cb558af291921",
+          "period": "2025-FY",
+          "kind": "10-K",
+          "location": "FY2025 10-K, Risk Factors, printed page 21; Note 3, Servicing Advances, F-13",
+          "asset_hashes": []
+        }
+      ],
+      "supporting_review": {
+        "id": "pfsi-fy2025-advance-recoverability",
+        "period": "2025-FY",
+        "period_end": "2025-12-31",
+        "context_type": "historical_structural_risk",
+        "source_types": [
+          "10-K"
+        ],
+        "headline": "Servicing advances carry reimbursement, regulatory-timing and recoverability exposure.",
+        "investor_read": "The FY2025 annual filing says advances may be delayed or increased by regulatory actions, and that some government-program loans may not be fully insured or guaranteed. It also says PFSI records a valuation allowance for amounts above expected insurer, guarantor or beneficial-interest-holder recovery. At December 31, 2025, servicing advances were reported net at $589.542 million, including a $103.574 million valuation allowance, with $406.825 million pledged to creditors.",
+        "analyst_interpretation": "For servicing oversight, the annual disclosure makes advance needs, time to reimbursement and ultimate recoverability separate watch items. This is FY2025 structural context; it does not establish that a regulatory curtailment occurred or forecast Q2 2026 losses.",
+        "speaker": null,
+        "speaker_note": "The 10-K is a filed annual report; no speaker attribution applies.",
+        "figures": [
+          {
+            "label": "Servicing advances, net at December 31, 2025",
+            "value": "589.542",
+            "raw_value": "589,542",
+            "unit": "USD_millions",
+            "reported_unit": "USD_thousands",
+            "measure_type": "stock",
+            "definition": "Consolidated balance-sheet servicing advances, net; the line includes the stated valuation allowance and identifies the amount pledged to creditors.",
+            "source_location": "10-K HTML table 247, row 13, Consolidated Balance Sheets (printed page F-4)"
+          },
+          {
+            "label": "Valuation allowance included in servicing advances, 2025",
+            "value": "103.574",
+            "raw_value": "103,574",
+            "unit": "USD_millions",
+            "reported_unit": "USD_thousands",
+            "measure_type": "stock",
+            "definition": "Allowance disclosed within the December 31, 2025 servicing-advances line for amounts not expected to be recovered.",
+            "source_location": "10-K HTML table 247, row 13, Consolidated Balance Sheets (printed page F-4)"
+          },
+          {
+            "label": "Servicing advances pledged to creditors, 2025",
+            "value": "406.825",
+            "raw_value": "406,825",
+            "unit": "USD_millions",
+            "reported_unit": "USD_thousands",
+            "measure_type": "stock",
+            "definition": "Amount identified in the balance-sheet line as pledged to creditors at December 31, 2025.",
+            "source_location": "10-K HTML table 247, row 13, Consolidated Balance Sheets (printed page F-4)"
+          }
+        ],
+        "evidence": [
+          {
+            "document_id": "aaaf62ff1b5145d2d2198f86",
+            "source_content_hash": "bc2ebcde63126b5bd400a4c415dafcaf00adb1ded456f309dc2cb558af291921",
+            "location": "10-K HTML text line 3088, Risk Factors—Risks Related to Mortgage Production and Servicing / We are required to make servicing advances (printed page 21)",
+            "quote": "If a loan serviced by us is in default or becomes delinquent, the repayment to us of the advance may be delayed until the loan is repaid or refinanced or a liquidation occurs. Federal, state or local regulatory actions may also result in an increase in the amount of servicing advances that we are required to make, lengthen the time it takes for us to be reimbursed for such advances and increase the costs incurred while the loan is delinquent.",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926018142/pfsi-20251231x10k.htm",
+            "archive_path": "data/archive/PFSI/2025-FY/PFSI_2025-FY_10-K_0001104659-26-018142_bc2ebcde63126b5b.htm",
+            "period": "2025-FY"
+          },
+          {
+            "document_id": "aaaf62ff1b5145d2d2198f86",
+            "source_content_hash": "bc2ebcde63126b5bd400a4c415dafcaf00adb1ded456f309dc2cb558af291921",
+            "location": "10-K HTML text line 4411, Note 3—Significant Accounting Policies / Servicing Advances (printed page F-13)",
+            "quote": "The Company is contractually responsible for making the payments required to protect its beneficial interest holders’ interests in the properties collateralizing their loans and may, therefore, be required to advance amounts in excess of insurer or guarantor reimbursement limits. Therefore, the Company provides a valuation allowance on the servicing advances for these amounts in excess of amounts that are expected to ultimately be recovered from the loans’ insurers, guarantors or beneficial interest holders.",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926018142/pfsi-20251231x10k.htm",
+            "archive_path": "data/archive/PFSI/2025-FY/PFSI_2025-FY_10-K_0001104659-26-018142_bc2ebcde63126b5b.htm",
+            "period": "2025-FY"
+          },
+          {
+            "document_id": "aaaf62ff1b5145d2d2198f86",
+            "source_content_hash": "bc2ebcde63126b5bd400a4c415dafcaf00adb1ded456f309dc2cb558af291921",
+            "location": "10-K HTML text line 4413, Note 3—Significant Accounting Policies / Servicing Advances (printed page F-13)",
+            "quote": "The servicing advance valuation allowance is estimated based on relevant qualitative and quantitative information about past events, including historical collection and loss experience, current conditions, and reasonable and supportable forecasts that affect collectable amounts. The provision for losses on servicing advances is included in Servicing expense in the consolidated statements of income. Servicing advances are written off when they are deemed unrecoverable.",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926018142/pfsi-20251231x10k.htm",
+            "archive_path": "data/archive/PFSI/2025-FY/PFSI_2025-FY_10-K_0001104659-26-018142_bc2ebcde63126b5b.htm",
+            "period": "2025-FY"
+          },
+          {
+            "document_id": "aaaf62ff1b5145d2d2198f86",
+            "source_content_hash": "bc2ebcde63126b5bd400a4c415dafcaf00adb1ded456f309dc2cb558af291921",
+            "location": "10-K HTML table 247, row 13, Consolidated Balance Sheets (printed page F-4)",
+            "quote": "Servicing advances, net (includes valuation allowance of $ 103,574 and $ 85,788 ; $ 406,825 and $ 357,939 pledged to creditors) | ​ | ​ | 589,542 | ​ | ​ | 568,512",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926018142/pfsi-20251231x10k.htm",
+            "archive_path": "data/archive/PFSI/2025-FY/PFSI_2025-FY_10-K_0001104659-26-018142_bc2ebcde63126b5b.htm",
+            "period": "2025-FY"
+          }
+        ],
+        "qualification": "The balance-sheet amounts are December 31, 2025 stocks reported in thousands and converted here to millions. The filing describes risk and accounting policy; it does not disclose a Q2 2026 reimbursement shortfall or regulatory curtailment in this context file."
+      }
+    },
+    {
+      "id": "pfsi-q226-advance-expense",
+      "cik": "0001745916",
+      "report_period": "2026-Q2",
+      "title": "Advance losses are an expense driver",
+      "text": "The 10-Q reports a $14.2m year-over-year increase in the servicing expense category for the quarter. Management attributes the increase primarily to loss provisions on servicing advances, reflecting larger delinquent loan balances, a larger portfolio and a higher share of loans 90 or more days delinquent. The $14.2m is the total expense increase, not a separately quantified advance-loss provision.",
+      "sources": [
+        {
+          "content_hash": "9b0062e5c2d62e2abe50a89a5b6f606140d6eaee6e3ef27ee824529292642155",
+          "period": "2026-Q2",
+          "kind": "10-Q",
+          "location": "MD&A, Expenses, Servicing: quarter and six months ended June 30, 2026"
+        }
+      ]
+    },
+    {
+      "id": "pfsi-q226-cenlar-outlook",
+      "cik": "0001745916",
+      "report_period": "2026-Q2",
+      "title": "Cenlar is an operating-leverage expectation",
+      "text": "In the earnings release, CEO David Spector said technology-enabled efficiency and scale were expected to produce operating leverage as the Cenlar subservicing portfolio is onboarded. He described fee-based revenue as part of the path to long-term return-on-equity targets. These are management expectations; the statement does not quantify realized savings or steady-state cost per loan.",
+      "sources": [
+        {
+          "content_hash": "cca51031e1aa3570fb48e9ef84124009dc533eb1ffc44c599529490d6b08183f",
+          "period": "2026-Q2",
+          "kind": "release",
+          "location": "CEO David Spector commentary, opening earnings-release paragraphs"
+        }
+      ]
+    }
+  ]
+}

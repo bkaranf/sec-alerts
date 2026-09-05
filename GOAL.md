@@ -1,0 +1,129 @@
+# Mortgage Servicing Earnings Brief
+
+## Completed goal: substantive single-company executive briefs
+
+Completed September 5, 2026. The fresh independent Astra Max critic approved the exact separate TD, RY, CM, BNS, BMO and PFSI briefs at 9.20, 9.25, 9.30, 9.30, 9.30 and 9.30 out of 10. Every category meets the required threshold and no acceptance blocker remains. Final verification: 259 passing tests, 60 rendered layout checks, 24 approved reader-value records, verified source-insight controls, and unchanged reviewed MIME bodies during final packaging. The approval is bound to `output/company-briefs/review/final-manifest.json` and documented in `output/company-briefs/review/final-astra-review.md`. No new email was sent and no public deployment was made. Future regenerated content requires its own current review.
+
+The user's execution, autonomy, instruction-conflict, style and verification guidelines are saved in the project `AGENTS.md` and `GOAL_PROMPT.txt`, with broader user-level Codex defaults in `C:/Users/bkara/.codex/AGENTS.md`. These are custom instructions; they do not replace platform system instructions or permission boundaries.
+
+The user rejects the earlier sparse, predominantly white design and thin earnings-call coverage. Rebuild the current company briefs with the judgment, depth and presentation expected from a senior mortgage-servicing executive and financial analyst. Each brief and each email draft contains exactly ONE reporting company and one earnings event. Compatible prior periods and relevant annual context may support that company's analysis. The earlier one-off multi-company email exception is historical and does not apply to this goal.
+
+Read the available full call materials, prepared remarks, presentations and relevant filings. Publish supported management explanations, outlook, financial drivers and bounded analytical implications that help a servicing profitability/oversight reader. Do not settle for a lone observation, a large decorative chart or a coverage caveat when useful information exists. Disclose unavailable call material honestly and pursue available official sources without fabricating statements.
+
+Use a compact company-first branded masthead, better logo placement, a purposeful tonal hierarchy with less empty white space, and a coherent top-to-bottom flow. Preserve exact metric meaning and sources, useful qualifications, official branding and no em dashes. Root orchestrates precise Luna Max implementation. A fresh Astra 6.0 critic directs corrections and must independently award at least 9/10 on the actual final desktop, phone and email experience before completion. Previous scores do not approve this rebuild. New work lives in `output/company-briefs`; original evidence and sent artifacts remain preserved. No replacement send is authorized by this design goal.
+
+## Core UI principle: the company's identity belongs on every brief
+
+Every company brief uses that issuer's official logo and verified color palette consistently across its HTML page, mobile view, email and generated PDF. Keep the company name and logo together in a compact header, with The Servicing Brief identified separately as the publisher. Apply the palette to the entire page, including the filled summary panel, background, section surfaces, headings, links and rules, while preserving readable financial content and a consistent top-to-bottom reading structure. The main summary must use the current issuer's primary color with a contrast-tested foreground. No stale shared green/navy theme or another company's colors may remain. The shared page-theme generator and publication checks enforce this principle.
+
+Brand colors never determine whether a financial result is favorable or unfavorable. Keep financial red/green signals distinct and supported by the evidence. Preserve original logo proportions and colors, retain the company name as real text when images are blocked, and use a neutral text identity if official assets cannot be verified. Every new issuer must go through the shared branding registry and Astra's actual-render review. The detailed inclusion, fallback and acceptance rules are in `docs/UI_CONTENT_STANDARD.md` under Company identity. This principle applies to future briefs as well as the current redesign; it does not permit multiple companies in one default brief.
+
+## Completed review goal: four improvement loops
+
+Completed four sequential UI/content reviews, precise Luna Max implementation, prevention controls and fresh independent Astra Max acceptance. Scores: 9.28, 9.37, 9.42 and 9.44 out of 10. Official company logos and verified colors are now a core UI principle, with readable real-text identity and separate financial color meanings. The final review also recovered useful RBC retention and renewal-risk remarks and strengthened the internal passage-review control. All 225 tests pass. The accepted revised artifacts live in `output/brief-improvement`; the exact final candidate is bound by `loop-4/final-snapshot-sha256.json`. Loop records and independent judgments are retained there. This review did not send a replacement email.
+
+## Prior delivered-brief audit and publication boundaries
+
+Review all content in the five-company PDF emailed September 5, 2026, identify what earns reader attention and what does not, trace weak inclusions to observed selection/rendering logic, and enforce a P0 reader-value release control. Preserve the sent PDF, email and canonical evidence. Do not send a replacement under this audit objective. The complete item review and independent Astra critique are in `output/reader-value-review`. The P0 standard is in `docs/UI_CONTENT_STANDARD.md` and supersedes template completeness and prior aesthetic approval as a release criterion.
+
+Earlier completion statements below describe earlier tasks. The original audited artifacts remain held for unresolved revisions/removals. The new acceptance applies only to the exact revised candidate bound to the final Loop 4 snapshot, not the older sent artifacts or future regenerated content.
+
+Completed September 5, 2026: reviewed all 148 delivered PDF blocks, with 30 revise and 27 remove decisions; traced selection defects and implemented P0 item review across HTML/plain-text delivery, package and PDF release, plus explicit omission controls. Independent Astra content critique and final integration review were incorporated. All 171 tests pass. Actual release attempts hold the existing weak briefs, with the sent PDF and canonical evidence unchanged. See `output/reader-value-review/ACCEPTANCE.md`. This audit completion does not approve or send revised briefs.
+
+## Approved implementation goal: reader-first financial briefs
+
+Implement the five mandatory principles in `docs/UI_CONTENT_STANDARD.md`: help readers understand the company, remove research-process filler, keep exclusion decisions internal, never mislead through financial presentation, and prohibit em dashes throughout reader-facing output. Enforce supported source insights with an internal evidence record and validate the actual rendered call copy. Finish the five-company redesign with explicit Astra Max approval of complete desktop, mobile and email renders. Apply shared reader-content checks to ordinary single-company briefs. Preserve canonical evidence and the previously sent package; prepare a revised local email draft without resending or enabling recurring delivery.
+
+Completed September 5, 2026: Astra Max approved the final five-company desktop, phone and inline-only email renders and normal PFSI brief. Approval and artifact hashes are recorded in `output/five-company-review/qa/astra-visual-approval.json`. All 138 tests pass; 42 rendered numeric cells match unchanged canonical evidence; source-insight checks pass for all five companies. The revised local email draft is unsent. Its HTML body is 89,768 bytes and MIME is 15,140,477 bytes, within their limits. The original sent package remains preserved. This completes the reader-first implementation goal, not authorization to resend or enable scheduling.
+
+Build, verify, and hand off a maintainable Windows utility that detects mortgage-servicing companies' earnings releases and prepares a useful, polished, evidence-backed email draft for each company individually, with the underlying financial documents attached.
+
+This objective incorporates the user's latest instructions and supersedes conflicting output and design requirements in the original pasted specification. Continue from the existing implementation; preserve completed work that supports this objective.
+
+## Current priority: one requested five-company email
+
+The initial five-company email was accepted by Gmail on September 5, 2026. Its exact package and confirmation are preserved in `output/five-company-review/sent-2026-09-05`. The user's subsequent feedback rejects that layout and makes a substantial UI rebuild the current priority: use McKinsey and Apple as editorial/typographic inspiration, remove dense repetition and cramped comparison-date cells, and make the page sleek, professional and easy to follow. A fresh GPT-6 Astra subagent at maximum reasoning must act as a harsh design critic, direct precise Luna implementation, inspect the actual desktop and mobile renders, and explicitly approve the redesign before UI completion. Preserve verified financial evidence and the sent record. Prepare the revised preview and package without sending a second copy merely because the design changed.
+
+The September 5 request authorizes preparing and sending one compiled email from and to bkaranf5@gmail.com containing five separate financial reviews for the companies with the most recent completed earnings calls in an expanded, SEC-screened mortgage-servicing universe. The earlier 11-company selection is provisional and superseded. Screen the SEC ticker reference and recent annual/quarterly filing content across reporting companies, including commercial servicers and nonlisted/foreign reporters supported by the source datasets. Verify actual servicing activity, consolidate acquired brands under current reporting parents, and retain included, excluded, and unresolved records with evidence. Disclose exact dataset coverage, dates, counts, pagination and gaps; do not equate a completed dataset scan with proof that every possible servicer was identified.
+
+Maintain a small refreshable JSON/CSV earnings calendar with verified latest completed calls, separately announced future release/call dates, timezones, sources and last checks. Keep unknown dates explicit. Calendar dates prioritize checks; only a published release triggers a draft. Resolve candidates that could displace fifth place before describing the five-company selection as definitive. A fresh Astra subagent reviewed both the original plan and this broader revision before implementation; Luna Max workers execute bounded assignments under root integration and review. The accepted plan and artifacts are in `output/five-company-review` and `output/servicer-universe`.
+
+This one-off compilation is an explicit exception to separate delivery below. Preserve the normal monitoring contract and existing backlog; do not invoke its bulk send command, activate candidates or scheduling, or build new generic parsers. Use manually verified official evidence for these five reviews, then check the complete Gmail draft and send once. This instruction supplies authorization for this specific email, not recurring delivery.
+
+## One company, one draft
+
+- Generate a separate company-specific earnings draft whenever a new relevant earnings release is detected.
+- If several companies release earnings on the same day, generate separate drafts for each company. Do not combine them into one email or wait for a daily peer roundup.
+- A draft covers one reporting company and its reporting event. It is not a cross-company comparison, ranking, or benchmarking report.
+- Meaningful comparisons with that same company's compatible prior quarter or prior year may explain what changed. Keep definitions, reporting boundaries, and acquisition effects explicit.
+- On first use, prepare only each company's latest available baseline, clearly labeled; do not generate a historical alert flood.
+- A later presentation, 10-Q, amendment, or material correction produces a concise update for the affected company, without repeating unchanged summaries unnecessarily.
+- Include the earnings-call transcript when publicly available from an authoritative issuer-published or SEC source. A later transcript triggers its own concise update for that company and event; do not delay the initial release draft waiting for it.
+- Generate a useful release draft before every supporting document is available. Identify missing or inaccessible materials and recheck them independently.
+- Discovery frequency is configurable. Prepare each draft immediately upon detection during a check; never aggregate different companies because they were discovered in the same run. Recurring monitoring and sending remain unactivated until authorized.
+
+## Astra owns design and integration
+
+- GPT-6 Astra leads product decisions, information selection, email design, visual presentation, integration, and final visual acceptance. Luna executes UI changes from precise Astra instructions, as the user most recently requested.
+- Do not delegate design leadership to Luna. Astra must inspect the actual render, critique it from the reader’s perspective and direct or make refinements before acceptance.
+- Use actual GPT-5.6 Luna subagents at maximum reasoning for bounded source collection, financial evidence, delivery/reliability, and independent factual review. Use supported model controls and no more than three concurrent Luna workers. Report a real model-availability blocker rather than substituting silently.
+- Keep source, evidence, delivery, and review responsibilities separate. Preserve unrelated work; do not push, merge, or deploy publicly without authorization.
+
+## Executive email design
+
+- Latest visual direction supersedes the earlier dense newsprint treatment: make the brief contemporary, approachable and easy for younger financial readers to follow from top to bottom. Use a quiet masthead, clear company takeaway, one useful chart, concise developments, a compact table and readable supporting sections. Avoid clunky large branding, tiny type, typewriter labels and decorative dashboard components.
+- Keep the strapline and visible baseline-edition wording removed; show the actual earnings-release date. Emphasize exactly one supported improvement in green and one pressure point in red within the table. Include an evidence-backed visual, never a pie chart, and frame closing questions for an investor in the company.
+- Put the upright column chart before the table, with values above the columns and readable sans-serif quarter labels. Both chart and table run chronologically from earlier quarters on the left to the current quarter on the right. Reduce repeated values and redundant introductory prose.
+- Astra provides precise design instructions for Luna to execute, then reviews the actual narrow and wider render and continues improving material readability issues. Visual acceptance requires a coherent polished result, not an unsupported claim that subjective design quality is objectively perfect.
+- Deliver a restrained, readable HTML email with a plain-text alternative. The primary draft preview must show one company.
+- Lead with the company, reporting period, and the most important servicing finding.
+- Include only useful, relevant information: a few key developments, a compact selection of disclosed metrics, the reasons management gives for changes, and focused profitability/oversight questions where useful.
+- Incorporate useful prepared remarks and analyst Q&A from the earnings call, especially servicing profitability, cost drivers, MSR valuation/hedging, advances and funding, portfolio changes, prepayments/recapture, and management outlook. Identify management statements and analyst questions distinctly; retain speaker and page/section/timestamp when available. Explain meaningful additions to the release without inventing causation or treating forward-looking comments as reported results.
+- Read the actual earnings presentation, latest annual 10-K and current 10-Q for useful additional investor insights, and incorporate supported findings into the analysis with slide/page/section citations. Attaching or listing these materials alone does not satisfy this requirement. Label annual context with its original period and avoid repetitive boilerplate.
+- Remove em dashes from displayed briefs. Use a contemporary sans-serif financial memo with the main insight as the headline, concise source-backed explanations, a compact chart and table, and a clear vertical reading flow. Astra directs the design and Luna implements precise instructions.
+- Treat the em dash ban and accounting parentheses for negative financial values as P0 design, review and release controls. Apply them to all reader-facing prose, tables, chart labels, generated and accessible text, and email subjects and bodies. Preserve signed evidence, calculations, financial units and chart direction. Verify actual final rendered and packaged outputs; a prior approval does not cover changed content. Source originals remain unchanged.
+- Use clear language, readable monetary units, short source references, and generous spacing. Avoid decorative dashboard components, oversized tables, raw evidence IDs, programming labels, repeated citations, and duplicated explanations.
+- Keep full source definitions, detailed locations, formulas, and supporting records in the evidence files and underlying documents. Concise presentation must preserve financial accuracy and traceability.
+- Verify the actual rendered email before acceptance. Astra must inspect and improve the design directly.
+
+## Authoritative sources and financial accuracy
+
+### Source-insight control
+
+- Before completing a brief, search the available prepared remarks and analyst Q&A for a useful explanation, outlook statement, change from the release, or operational detail that affects an investor's understanding. Apply the same editorial check to the presentation and financial filings. A document being opened, attached or marked reviewed is not an analytical finding.
+- For each available call source, either incorporate a material source-backed finding or document why the source adds no material information beyond the brief. Keep the exact passage, page or timestamp, speaker/context, source hash, reported period and whether the statement is an outlook or a reported result. Explain why the finding matters without inventing causality.
+- Procedural copy such as "the prepared remarks were reviewed" does not pass as a call insight. When no useful incremental finding exists, keep that decision in the evidence record instead of filling the brief with process language. When call text is unavailable, retain a clear availability note and do not invent statements or quotes.
+- Use the reusable source-insight gate and review protocol in `docs/SOURCE_INSIGHT_CONTROL.md`. The current five-company package must pass that gate against its actual published call text before it is considered ready. The gate supplements source review and human editorial judgment; it does not turn a keyword match into proof of useful analysis.
+
+- Use EdgarTools as the sole SEC acquisition layer, with its installed, documented public APIs. Independently discover materials on official issuer investor-relations websites and document hosts reached from those sites.
+- Use CIK-based identity. Start with Truist/TFC and PennyMac Financial Services/PFSI; then support Wells Fargo/WFC and Rocket/RKT. Validate the editable expansion candidates JPM, BAC, USB, UWMC, RITM, ONIT, and LDI. Verify current reporting status and parent/acquisition boundaries; do not double count acquired brands such as Mr. Cooper.
+- Monitor relevant earnings releases, presentations, supplements, 10-Q/10-K and amendments, financially relevant 8-K exhibits, and reporting delays. Exclude navigation pages, routine administrative filings, and unrelated announcements.
+- Independently discover current-period earnings-call transcripts and issuer-published prepared remarks on official IR event pages. Preserve and attach actual transcript copies when available within the email budget, after the principal earnings materials. Distinguish a transcript from a webcast link or prepared remarks; do not claim to have reviewed a call when only its event page is available. Record an unavailable, blocked, or not-yet-found transcript explicitly and recheck later. Respect access restrictions; no paid subscription or third-party AI summary is required.
+- Require EDGAR_IDENTITY for live SEC work, disclose only configured=yes/no, and enforce an aggregate maximum of five SEC requests per second across this tool's processes. Use caching, bounded retries, backoff, source checkpoints, overlap, and persistent pending work. Respect access restrictions.
+- Archive source documents with issuer, CIK, accession, source link, classification, financial period, publication/acceptance time, retrieval time, and content hash. Preserve original binary files. Explicitly label any library-decoded HTML representation or generated packaging; do not claim unavailable byte fidelity or an unverified PDF print copy.
+- Attach actual documents within a conservative 15 MiB encoded-message budget. Package HTML image decks with their archived original images; split a company's attachments into numbered messages when needed. Explain omissions and retain authoritative links.
+- Keep servicing separate from origination, broader mortgage banking, and consolidated company results. Distinguish servicing income from servicing profit, owned MSRs from subservicing, and total portfolios from servicing for others.
+- Use exact Decimal arithmetic and preserve signs, units, scale, periods, scope, definitions, and citations. Do not substitute missing figures with zero or guess table columns, denominators, expenses, or causes.
+- Extract numerical facts only from verified layouts or explicit source-proof rules. Unrecognized layouts remain document coverage with an honest extraction limitation, not invented metrics or a claim that the issuer disclosed nothing.
+- Allow only compatible changes and properly validated standalone-quarter flow derivations. Retain inputs and formulas. Handle amendments, conflicts, and acquisition discontinuities explicitly.
+- Optional OpenAI narrative generation is bounded, cached, citation checked, and unable to alter financial tables, recipients, or delivery state. Without API credentials or on failure, produce a useful evidence-only report.
+
+## Delivery, operation, and reliability
+
+- Keep a small Python/uv project using SQLite, local archives, Jinja2, standard MIME/SMTP, EdgarTools, and one PDF parser. Do not add a mandatory dashboard or runtime agent framework.
+- Use Gmail authenticated SMTP over TLS. The explicitly configured sender and single recipient are both bkaranf5@gmail.com. Keep authentication secrets in environment variables or appropriate local storage, never in chat or committed configuration.
+- Default to local HTML and .eml previews. A real test send and recurring sends require working credentials and explicit authorization. Selecting Gmail and configuring an address alone do not authorize a send.
+- Track document discovery, prepared drafts, and provider acceptance independently. Suppress unchanged duplicates, retain failed work, isolate issuer failures, prevent overlapping sends, and hold ambiguous SMTP outcomes for explicit reconciliation.
+- Provide doctor, bootstrap --dry-run, run-once --dry-run, run-once --send, send-test, status, and clear recovery commands.
+- Provide configurable, timezone/DST-aware Windows scheduling with missed-run catch-up and overlap protection. Keep scheduling prepared but disabled until authorized. Explain that local execution requires the computer to be available.
+
+## Acceptance and handoff
+
+- Deliver working code, editable watchlist/configuration, a credential-free environment template, scheduling/setup scripts, and concise operation and troubleshooting instructions.
+- Produce separate real-data Truist and PennyMac drafts and verified .eml packages with source documents. Show a polished single-company draft as the primary preview. A consolidated cross-company email is no longer a required deliverable.
+- Test separate drafts for multiple companies releasing in one run, per-company baseline behavior, later documents, revisions, period matching, scope/units/signs, missing/incomparable facts, failures, deduplication, ambiguous delivery, encoded attachment limits, and scheduling.
+- Normal tests must be deterministic and offline. Record actual live source checks separately.
+- Independently compare actual source documents against actual reports and attachments; fix substantive findings. Astra owns the visual acceptance pass.
+- Verify the transcript path with actual available call material, traceable excerpts, speaker/context accuracy, financial-period matching, duplicate suppression and a later-transcript follow-up test. Do not fabricate call coverage for companies whose transcripts are inaccessible.
+- State exactly what was implemented, which sources and companies were verified, which tests passed, what limitations remain, whether SMTP acceptance was actually tested, whether scheduling is enabled, and what credentials or authorization remain necessary.
+- Do not label the system operationally complete while live email or scheduling remains unverified. Complete every independent task that remains feasible and identify precise blockers honestly.

@@ -1,0 +1,54 @@
+The Servicing Brief
+Company: {{ name }} ({{ ticker }})
+Earnings period: {{ period }}
+{% if event_date_label %}{{ event_date_label }}{% endif %}{% if event_date %} {{ event_date }}{% endif %}
+
+{{ headline_main|default(editorial_headline, true) }}{% if headline_secondary|default('', true) %}
+{{ headline_secondary }}{% endif %}{% if executive_intro|default('', true) %}
+{{ executive_intro.text }}{% if executive_intro.citations %} {{ executive_intro.citations|striptags }}{% endif %}{% endif %}
+
+{% set only_funding_point = points|length == 1 and 'fund' in (points[0].topic|default('', true)|lower) %}
+{% if points and not only_funding_point %}Key developments
+{% for point in points %}{{ point.topic }}. {{ point.text }} {{ point.citations|striptags }}
+{% endfor %}{% endif %}{% if explanations or only_funding_point %}
+Why it moved
+{% for item in explanations %}{% if item.summary %}{{ item.summary }}{% else %}{{ item.topic }}. "{{ item.text }}"{% endif %} [{{ item.source_number }}]
+{% endfor %}{% if only_funding_point %}{{ points[0].topic }}. {{ points[0].text }} {{ points[0].citations|striptags }}
+{% endif %}{% endif %}{% if call_passages %}
+From the earnings call
+{% for item in call_passages %}{{ item.speaker }} · {{ item.label }}
+"{{ item.text }}" [{{ item.number }}]
+{% endfor %}{% endif %}{% if earnings_context %}
+{% for item in earnings_context %}{% if item.title or item.text %}{{ item.title }}. {{ item.text }}{% for proof in item.sources %} [{{ proof.number }}]{% endfor %}
+{% endif %}{% endfor %}{% endif %}{% if chart %}
+{{ chart.title }}
+{% if chart.reader_note %}{{ chart.reader_note }}
+{% endif %}{% for bar in chart.bars %}{{ bar.period }}: {{ bar.amount }}{% if bar.current %} (current){% endif %}
+{% endfor %}Zero baseline. Source {{ chart.citations|striptags }}.
+{% endif %}{% if rows %}
+Reported figures
+Measure | {{ yoy_label }} | {{ qoq_label }} | {{ period }}
+{% for row in rows %}{{ row.label }} | {{ row.yoy }} | {{ row.qoq }} | {{ row.current }} {{ row.citations|striptags }}
+{% endfor %}{% endif %}{% if highlight_note %}
+{{ highlight_note }}
+{% endif %}{% if notes %}
+Notes
+{% for note in notes %}{{ note }}
+{% endfor %}{% endif %}{% if reviewed_context %}
+{{ context_heading|default('Portfolio and risk', true) }}
+{% for item in reviewed_context %}{{ item.title }}. {{ item.text }}{% for proof in item.sources %} [{{ proof.number }}]{% endfor %}
+{% endfor %}{% endif %}{% if selected_excerpts %}
+Source context
+{% for item in selected_excerpts %}"{{ item.text }}" [{{ item.number }}; {{ item.location }}; {{ item.url }}]
+{% endfor %}{% endif %}{% if questions %}
+Investor questions
+{% for question in questions %}{{ loop.index }}. {{ question }}
+{% endfor %}{% endif %}
+Sources
+{% for source in sources %}[{{ source.number }}] {{ source.name }}{% if source.date %} · {{ source.date }}{% endif %}
+{{ source.url }}
+{% endfor %}{% if issues %}
+Coverage notes
+{% for issue in issues %}{{ issue }}
+{% endfor %}{% endif %}
+Sources as of {{ as_of }}.

@@ -1,0 +1,12 @@
+{
+  "note": "Authentic excerpts from the locally archived official Q2 2026 earnings releases; normal tests require no network. HTML table numbering in the isolated fixture differs from the complete release (table 17).",
+  "TFC": {
+    "archive": "data\\archive\\TFC\\unknown\\TFC_unknown_release_6b5958ea1d4703d8.pdf",
+    "pdf_page": 21
+  },
+  "PFSI": {
+    "archive": "data\\archive\\PFSI\\2026-Q2\\PFSI_2026-Q2_8-K_0001104659-26-088174_cca51031e1aa3570.htm",
+    "url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-1.htm",
+    "table": 17
+  }
+}

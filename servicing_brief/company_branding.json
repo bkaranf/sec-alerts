@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "neutral": {
+    "primary_color": "#52606D",
+    "accent_color": "#9AA6B2"
+  },
+  "brands": {
+    "BMO": {
+      "company_name": "Bank of Montreal (BMO Financial Group)",
+      "primary_color": "#0079C1",
+      "accent_color": "#ED1C24",
+      "public_logo_url": "https://www.bmo.com/dist/images/logos/bmo-blue-on-transparent-en.svg",
+      "logo_alt": "BMO blue wordmark with red roundel",
+      "local_asset_path": "assets/brands/BMO.png",
+      "asset_sha256": "a2606d803523f62e5894f3325932b6856df76a71e9748e55a85522c5fbb48012",
+      "verified": true,
+      "source_urls": [
+        "https://www.bmo.com/en-ca/main/personal/",
+        "https://www.bmo.com/dist/images/logos/bmo-blue-on-transparent-en.svg"
+      ],
+      "verification": {
+        "method": "Parsed exact fills from the official SVG and rendered the unchanged SVG to a local PNG for email.",
+        "original_asset_sha256": "da3dc7a279a3f9e10d0beb1f4f0fc4f61cbe517b3bef7954bb1a9412cd242edf",
+        "raster_asset_sha256": "a2606d803523f62e5894f3325932b6856df76a71e9748e55a85522c5fbb48012",
+        "verified_on": "2026-09-05"
+      }
+    },
+    "BNS": {
+      "company_name": "The Bank of Nova Scotia (Scotiabank)",
+      "primary_color": "#EC111A",
+      "accent_color": "#EC111A",
+      "public_logo_url": "https://www.scotiabank.com/content/dam/scotiabank/images/logos/2019/scotiabank-logo-red-desktop-200px.svg",
+      "logo_alt": "Scotiabank red wordmark",
+      "local_asset_path": "assets/brands/BNS.png",
+      "asset_sha256": "9bd5add1dbe4c24c0e4367079293db46d1eeb0262cdaadfb029427cad387a235",
+      "verified": true,
+      "source_urls": [
+        "https://www.scotiabank.com/ca/en/about.html",
+        "https://www.scotiabank.com/content/dam/scotiabank/images/logos/2019/scotiabank-logo-red-desktop-200px.svg"
+      ],
+      "verification": {
+        "method": "Parsed the exact CSS percentage color from the official SVG and rendered the unchanged SVG to a local PNG for email.",
+        "original_asset_sha256": "87377846365e879595a7912be60a6998e56d8eb64e6f2c978a4a6e34e7532d6a",
+        "raster_asset_sha256": "9bd5add1dbe4c24c0e4367079293db46d1eeb0262cdaadfb029427cad387a235",
+        "verified_on": "2026-09-05"
+      }
+    },
+    "CM": {
+      "company_name": "Canadian Imperial Bank of Commerce (CIBC)",
+      "primary_color": "#C41F3E",
+      "accent_color": "#8B1D41",
+      "public_logo_url": "https://www.cibc.com/content/dam/global-assets/logos/cibc-logos/no-tagline/cibc-logo-colour-142x36.svg",
+      "logo_alt": "CIBC red wordmark",
+      "local_asset_path": "assets/brands/CM.png",
+      "asset_sha256": "c72c6ce29185c091d16951b862c85eedcdd80c6b6b6d97a5b2581f91cc862589",
+      "verified": true,
+      "source_urls": [
+        "https://www.cibc.com/en/about-cibc/media-centre/images.html",
+        "https://www.cibc.com/content/dam/global-assets/logos/cibc-logos/no-tagline/cibc-logo-colour-142x36.svg"
+      ],
+      "verification": {
+        "method": "Parsed exact red fills from the official SVG and rendered the unchanged SVG to a local PNG for email.",
+        "original_asset_sha256": "bac21b84830794126ed00b06b05725b4d37e39ad51ac260871706b1d66f11993",
+        "raster_asset_sha256": "c72c6ce29185c091d16951b862c85eedcdd80c6b6b6d97a5b2581f91cc862589",
+        "verified_on": "2026-09-05"
+      }
+    },
+    "PFSI": {
+      "company_name": "PennyMac Financial Services, Inc.",
+      "primary_color": "#003087",
+      "accent_color": "#14892C",
+      "public_logo_url": "https://s201.q4cdn.com/340896660/files/doc_multimedia/2025/4/1009631960/PFSI-logo-R-horz-rgb-pos-color%40thumbnail.png",
+      "logo_alt": "PennyMac Financial Services wordmark",
+      "local_asset_path": "assets/brands/PFSI.png",
+      "asset_sha256": "43b713da53a9ed7214a475fc4b8dcecaad7ae0f272864f1fe47fd949e3b968a9",
+      "verified": true,
+      "source_urls": [
+        "https://pfsi.pennymac.com/news-events/press-releases/news-details/2025/PennyMac-Financial-Services-Inc--Reports-First-Quarter-2025-Results/default.aspx",
+        "https://www.pennymac.com/about-us",
+        "https://s201.q4cdn.com/340896660/files/doc_multimedia/2025/4/1009631960/PFSI-logo-R-horz-rgb-pos-color%40thumbnail.png"
+      ],
+      "verification": {
+        "method": "Retained the official issuer-linked PNG thumbnail for email and matched its colors to exact fills in the official current-site SVG.",
+        "original_asset_sha256": "0e085261de2982a4e4a5679cdca030dc77ddcf14301255569de2536a01588006",
+        "raster_asset_sha256": "43b713da53a9ed7214a475fc4b8dcecaad7ae0f272864f1fe47fd949e3b968a9",
+        "verified_on": "2026-09-05"
+      }
+    },
+    "RY": {
+      "company_name": "Royal Bank of Canada",
+      "primary_color": "#0059B3",
+      "accent_color": "#FFDF01",
+      "public_logo_url": "https://www.rbc.com/en/wp-content/themes/rbc/img/logos/rbc-logo-shield.svg",
+      "logo_alt": "Royal Bank of Canada blue and yellow shield",
+      "local_asset_path": "assets/brands/RY.png",
+      "asset_sha256": "320997d5d002411e9972e6e536fb44a83bd6167c15c7bf42572d30edd4ad283b",
+      "verified": true,
+      "source_urls": [
+        "https://www.rbc.com/en/about-us/",
+        "https://www.rbc.com/en/wp-content/themes/rbc/img/logos/rbc-logo-shield.svg"
+      ],
+      "verification": {
+        "method": "Parsed exact blue and yellow fills from the official SVG and rendered the unchanged SVG to a local PNG for email.",
+        "original_asset_sha256": "96b1108b1d9a23174052f3417f90560e8003483a8be17c6dad05924151eba199",
+        "raster_asset_sha256": "320997d5d002411e9972e6e536fb44a83bd6167c15c7bf42572d30edd4ad283b",
+        "verified_on": "2026-09-05"
+      }
+    },
+    "TD": {
+      "company_name": "The Toronto-Dominion Bank",
+      "primary_color": "#43B02A",
+      "accent_color": "#43B02A",
+      "public_logo_url": "https://www.td.com/content/dam/tdct/images/navigation-header-and-footer/td-logo-mobile.png",
+      "logo_alt": "TD green shield mark",
+      "local_asset_path": "assets/brands/TD.png",
+      "asset_sha256": "cde2ee102c6413b7f3ce798d122d697ab24d04bd4895e9f480aa82eeb1bc3a77",
+      "verified": true,
+      "source_urls": [
+        "https://www.td.com/ca/en/personal-banking",
+        "https://www.td.com/content/dam/tdct/images/navigation-header-and-footer/td-logo-mobile.png"
+      ],
+      "verification": {
+        "method": "Sampled the most frequent opaque non-white pixels in the official issuer PNG; the small official mobile PNG is retained for email.",
+        "original_asset_sha256": "cde2ee102c6413b7f3ce798d122d697ab24d04bd4895e9f480aa82eeb1bc3a77",
+        "raster_asset_sha256": "cde2ee102c6413b7f3ce798d122d697ab24d04bd4895e9f480aa82eeb1bc3a77",
+        "verified_on": "2026-09-05"
+      }
+    }
+  }
+}

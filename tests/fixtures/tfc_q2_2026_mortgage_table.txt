@@ -1,0 +1,57 @@
+Selected Mortgage Banking Information & Additional Information
+
+                                                                                    As of/For the Quarter Ended
+                                                                        June 30       March 31        Dec. 31         Sept. 30        June 30
+ (Dollars in millions, except per share data)                                        2026           2026           2025           2025           2025
+ Mortgage Banking Income
+    Residential mortgage income:
+        Residential mortgage production revenue                        $      24    $      27    $      26    $      22    $      25
+        Residential mortgage servicing income:
+            Residential mortgage servicing income before MSR valuation            70           82           77           74           72
+          Net MSRs valuation                                              5            9            1            9            1
+                Total residential mortgage servicing income                       75           91           78           83           73
+                    Total residential mortgage income                            99          118          104          105           98
+    Commercial mortgage income:
+       Commercial mortgage production revenue                               7           12           12           10            6
+       Commercial mortgage servicing income:
+        Commercial mortgage servicing income before MSR valuation             5            3            2            4            3
+        Net MSRs valuation                                               5      —            1               (1)      —
+              Total commercial mortgage servicing income                        10            3            3            3            3
+                  Total commercial mortgage income                            17           15           15           13            9
+                     Total mortgage banking income                     $     116    $     133    $     119    $     118    $     107
+ Other Mortgage Banking Information
+    Residential mortgage loan originations                             $    6,824    $    5,137    $    4,551    $    4,743    $    5,855
+    Residential mortgage servicing portfolio:(1)
+       Loans serviced for others                                         240,764       233,870       228,383       221,274       213,002
+       Bank-owned loans serviced                                         57,894        57,386        57,583        58,396        57,748
+            Total servicing portfolio                                         298,658       291,256       285,966       279,670       270,750
+    Weighted-average coupon rate on mortgage loans serviced for others           3.79 %        3.77 %        3.77 %        3.75 %        3.70 %
+    Weighted-average servicing fee on mortgage loans serviced for others          0.29           0.29           0.28           0.28           0.28
+
+ Additional Information
+    Brokered deposits(2)                                           $   26,812    $   28,488    $   29,835    $   28,423    $   30,008
+
+   NQDCP income (expense):(3)
+         Interest income                                            $   —    $         (6)   $       4    $       1    $   —
+       Other income                                                    31               (7)              (1)          17           21
+       Personnel expense                                                           (31)          13               (3)            (18)            (21)
+            Total NQDCP income (expense)                            $   —    $   —    $   —    $   —    $   —
+
+   Common stock prices:
+       High                                                    $    52.11    $    56.20    $    50.86    $    47.46    $    43.25
+      Low                                                                45.83         43.13         40.78         41.98         33.56
+      End of period                                                        49.82         45.97         49.21         45.72         42.99
+    Banking offices                                                         1,927         1,927         1,927         1,927         1,927
+   ATMs                                                                  2,820         2,826         2,829         2,837         2,847
+    Full-time equivalent teammates(4)                                        37,849        37,877        38,062        38,534        37,996
+
+(1)  Amounts reported are unpaid principal balance.
+(2)  Amounts represented in interest checking, money market and savings, and time deposits.
+(3)  Relates to plans where Truist holds assets in proportion to participant elections.
+(4)  Full-time equivalent teammates represents an average for the quarter.
+
+
+
+
+
+                                                                                    - 10 -

@@ -1,0 +1,41 @@
+Build, verify, and hand off Mortgage Servicing Earnings Brief using the revised requirements in C:\Users\bkara\OneDrive\Documents\ChatGPT\SEC Alerts\GOAL.md. That file supersedes conflicting requirements in the original attached specification; preserve all other source, financial-accuracy, delivery, reliability, and acceptance requirements. Apply the working guidelines below and in AGENTS.md throughout execution.
+
+Core display controls: apply the P0 rules in AGENTS.md and docs/UI_CONTENT_STANDARD.md during design, implementation, review and release. No em dashes in reader-facing surfaces. Display all negative financial values in parentheses while preserving signed underlying evidence and calculations. Validate actual final rendered and packaged output; changed artifacts require fresh checks.
+
+### Task Execution & Autonomy
+
+- For implementation or fix requests, carry the authorized work through implementation and relevant verification. Do not stop at a proposed plan when you can proceed.
+- Make reasonable assumptions for routine, reversible decisions. Ask a focused question when missing information materially affects correctness, scope, or authorization.
+- Continue with authorized read-only actions, local worktrees, branch edits, and appropriate tests without repeatedly asking.
+- Before requesting approval, finish the preparation that is already authorized and present a concrete, reviewable result.
+- Respect required approval gates. Ask before destructive, irreversible, or otherwise unauthorized actions.
+- Avoid boilerplate warnings about hypothetical risks. Explain concrete blockers or material risks when relevant.
+
+### Instruction Conflicts
+
+- Explicit user instructions take precedence over conflicting skill guidelines, subject to higher-priority instructions and actual permission boundaries.
+- If a skill causes a pause or deviation, identify the file and relevant rule, and explain whether it is an explicit requirement or your interpretation. Continue any unaffected authorized work.
+
+### Style & Output
+
+- Lead with the result. Use plain language, active voice, and concise paragraphs. Include technical details that help assess the work.
+- Use lists when they improve readability; avoid repetitive transitions and stock phrases such as "it's worth noting", "delve", "leverage", and "Bottom line".
+- Report what changed, what was verified, and any remaining uncertainty.
+
+### Verification
+
+- Match verification to the scope and impact of the change. Complete required checks; expand testing when a concrete unresolved concern justifies it.
+
+ONE COMPANY, ONE DRAFT: Whenever a watched company publishes a relevant earnings release and the monitor detects it, prepare a separate company-specific email draft. Several companies releasing on the same day must produce several independent drafts. Do not combine companies into a comparison, ranking, dashboard, or daily roundup. The primary preview must show one company. Explain meaningful changes within that company's compatible prior periods when useful. Prepare only the latest baseline per company, suppress unchanged duplicates, and issue concise company-specific follow-ups for later presentations, filings, or corrections.
+
+ASTRA OWNS DESIGN: GPT-6 Astra leads product decisions, information selection, email design, visual presentation, integration, and final visual acceptance. Luna executes UI changes from precise Astra instructions. Do not delegate design leadership to Luna. Actual GPT-5.6 Luna subagents at maximum reasoning may handle bounded source collection, financial evidence, delivery/reliability, and independent factual review, with at most three concurrent Luna workers.
+
+DESIGN: Replace the rejected draft with a polished, restrained executive email containing only useful information: a clear company/period heading, the key servicing takeaway, a few important developments, a compact selection of financial comparisons, supported management explanations, and concise source/document links. Remove oversized tables, repetitive citations, technical labels, raw evidence IDs, and irrelevant material. Preserve detailed definitions, exact locations, formulas, and inputs in supporting evidence. Verify the rendered HTML directly; provide a plain-text alternative.
+
+TRUSTWORTHY WORKFLOW: Preserve every source, evidence, financial-accuracy, provenance, attachment, reliability and coverage requirement in GOAL.md and the non-conflicting original specification. Use EdgarTools alone for SEC acquisition and official IR sites independently. Start with real TFC/PFSI, add WFC/RKT, and validate all seven expansion candidates. Use verified Decimal evidence, keep servicing definitions distinct, and deliver actual source copies within the encoded-message limit.
+
+GMAIL AND SCHEDULING: Sender and single recipient are both bkaranf5@gmail.com. Keep secrets local. Default to HTML/.eml drafts; do not send a test email or activate recurring sends without working credentials and explicit authorization. Prepare configurable Windows scheduling with timezone/DST and catch-up support. Generate drafts upon detection during each check, never by cross-company daily aggregation.
+
+ACCEPTANCE: Deliver functioning source code, configuration, offline tests with actual results, separate real-data bank and nonbank drafts, verified document attachments, scheduling/setup scripts, and clear operating instructions. Independently review actual sources against reports. State live-source limits, numerical extraction limits, Gmail acceptance status, scheduling status, and remaining credentials/authorization honestly. Complete all feasible independent work; do not claim operational completion while live delivery or scheduling is unverified.
+
+EARNINGS CALLS: Incorporate authoritative current-period call transcripts, including useful prepared remarks and analyst Q&A about servicing profitability, costs, MSRs, funding and portfolio changes. Cite speaker and source location when available, attach the actual transcript, distinguish outlook from results, and issue a company-specific follow-up when a transcript arrives later. Record unavailable transcripts honestly. The latest visual direction in GOAL.md is a contemporary, approachable financial brief with a clear top-to-bottom flow and readable charts.
