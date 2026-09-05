@@ -137,9 +137,8 @@ def test_fully_encoded_size_splits_and_omits_single_oversized_document(tmp_path:
     assert "attachment exceeds configured fully-encoded message limit" in omitted_text
     assert 'original copy retained locally' in omitted_text
     assert str(too_large) not in omitted_text
-    # Exact archive provenance stays available in the HTML metadata, without
-    # making a phone reader scan a Windows filesystem path.
-    assert str(too_large) in omitted_message.get_body(preferencelist=('html',)).get_content()
+    # Local provenance must not leak through reader-facing HTML tooltips.
+    assert str(too_large) not in omitted_message.get_body(preferencelist=('html',)).get_content()
 
 
 def test_package_key_changes_when_explicit_recipient_changes(tmp_path: Path) -> None:

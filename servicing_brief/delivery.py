@@ -505,8 +505,7 @@ def _append_omission(omissions: list[dict[str, str]], item: Mapping[str, str]) -
 def _document_links_html(attachments: Sequence[_Attachment], omissions: Sequence[Mapping[str, str]], theme: Mapping[str, str] | None = None) -> str:
     # This fragment is appended after the report HTML in the multipart
     # alternative.  Keep its layout self-contained because some mail clients
-    # strip the report stylesheet when they render the MIME alternative, and
-    # because local archive paths can be much longer than a phone viewport.
+    # strip the report stylesheet when they render the MIME alternative.
     section_style = (
         "box-sizing:border-box;width:100%;max-width:720px;margin:0 auto;"
         "padding:16px;background:#fcfbf8;border-top:1px solid #dce1e6;"
@@ -532,16 +531,12 @@ def _document_links_html(attachments: Sequence[_Attachment], omissions: Sequence
         rows.append(f'<h3 style="{heading_style}">Documents in this message</h3>')
         rows.append(f'<ul style="{list_style}">')
         for item in attachments:
-            # Prefer the issuer-supplied title for the visible label.  Keep
-            # the exact attached filename and archive path in the element
-            # title so the provenance remains available without forcing a
-            # long local Windows path into the phone layout.
+            # Keep the useful attachment filename in the tooltip. Absolute
+            # archive paths belong only in internal provenance records.
             document_title = str(_field(item.document, "title", "") or "").strip()
             display_label = document_title or item.filename
             label = html_lib.escape(display_label)
             provenance = f"Attached filename: {item.filename}"
-            if item.local_path:
-                provenance += f"; original archive: {item.local_path}"
             provenance_attr = html_lib.escape(provenance, quote=True)
             if item.source_url:
                 link = (
@@ -570,7 +565,7 @@ def _document_links_html(attachments: Sequence[_Attachment], omissions: Sequence
             local = item.get("local_path", "")
             if local:
                 local_note = (
-                    f'; <span title="Original archive: {html_lib.escape(local, quote=True)}" '
+                    f'; <span '
                     f'style="{muted_style}">archive retained locally</span>'
                 )
             else:

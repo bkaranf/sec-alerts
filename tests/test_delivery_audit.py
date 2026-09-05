@@ -113,6 +113,26 @@ def test_prepare_rejects_multiple_recipients_in_direct_config(tmp_path: Path) ->
         )
 
 
+def test_packaged_email_keeps_local_archive_paths_internal(tmp_path: Path) -> None:
+    source = tmp_path / "private-archive" / "earnings.pdf"
+    source.parent.mkdir()
+    original = b"verified source copy"
+    source.write_bytes(original)
+    paths = delivery.prepare_messages(
+        _config(), _report(), [_document(source, content=original)], tmp_path / "preview"
+    )
+    message = BytesParser(policy=policy.default).parsebytes(paths[0].read_bytes())
+    for subtype in ("html", "plain"):
+        body = message.get_body(preferencelist=(subtype,)).get_content()
+        assert str(source) not in body
+        assert "private-archive" not in body
+        assert "https://investor.example/earnings.pdf" in body
+    assert next(message.iter_attachments()).get_payload(decode=True) == original
+    omission = {"label": "Additional report", "url": "https://investor.example/report.pdf",
+                "local_path": str(source), "reason": "Exceeds message limit"}
+    assert str(source) not in delivery._document_links_html([], [omission])
+
+
 @pytest.mark.parametrize("recipient", [None, "", "   "])
 def test_prepare_allows_unset_recipient_for_preview(tmp_path: Path, recipient: str | None) -> None:
     config = _config(recipient=recipient) if recipient is not None else _config(recipient=None)
