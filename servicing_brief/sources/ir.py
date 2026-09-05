@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import email.utils
+import ipaddress
 import json
 import os
 import re
@@ -30,7 +31,9 @@ from .common import (
     infer_period,
     latest_completed_period,
     looks_like_document,
+    normalize_cik,
     source_document,
+    sha256_bytes,
     title_kind,
     utc_now,
     write_json_atomic,
@@ -40,6 +43,15 @@ from .common import (
 _RETRYABLE_STATUS = {408, 425, 429, 500, 502, 503, 504}
 _BLOCKED_STATUS = {401, 403}
 _MAX_RETRY_AFTER = 30.0
+_MAX_REDIRECTS = 5
+_REDIRECT_STATUS = {301, 302, 303, 307, 308}
+_PRIVATE_HOSTNAMES = {
+    "localhost",
+    "localhost.localdomain",
+    "ip6-localhost",
+    "ip6-loopback",
+    "0.0.0.0",
+}
 
 
 class IRSourceError(RuntimeError):
@@ -150,6 +162,81 @@ def _cache_path(config: dict[str, Any], url: str) -> Path:
     return path
 
 
+def _safe_http_url(url: str) -> tuple[bool, str]:
+    """Validate an HTTP URL before it can reach the transport layer.
+
+    IR document links may legitimately move to a public issuer CDN, so this
+    check does not require the target host to match the configured IR host.
+    It does reject credentials and local/reserved destinations, which would
+    otherwise make an official-page redirect an SSRF primitive.
+
+    Hostnames are intentionally not DNS-resolved here.  Private-address DNS
+    answers and rebinding remain a deployment/network boundary; literal
+    private addresses and ambiguous numeric host forms are rejected locally.
+    """
+
+    try:
+        parsed = urlparse(str(url or ""))
+        host = (parsed.hostname or "").rstrip(".").lower()
+    except ValueError:
+        return False, "malformed URL"
+    if parsed.scheme.lower() not in {"http", "https"} or not host:
+        return False, "URL is not HTTP(S)"
+    if parsed.username is not None or parsed.password is not None:
+        return False, "URL credentials are not allowed"
+    # URL parsers and ``ipaddress`` intentionally accept only canonical IP
+    # spellings.  Browsers and some HTTP stacks also interpret shorthand or
+    # integer IPv4 forms, which can disguise loopback/private destinations.
+    dotted_numeric = bool(re.fullmatch(r"[0-9.]+", host))
+    if (dotted_numeric and host.count(".") != 3) or re.fullmatch(r"(?:0[xX][0-9a-fA-F]+|[0-9]+)", host):
+        return False, "ambiguous numeric hostname is not allowed"
+    if host in _PRIVATE_HOSTNAMES or host.endswith(".localhost") or host.endswith(".local"):
+        return False, "local hostname is not allowed"
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        if dotted_numeric:
+            return False, "ambiguous numeric hostname is not allowed"
+        address = None
+    if address is not None and (
+        address.is_private
+        or address.is_loopback
+        or address.is_link_local
+        or address.is_reserved
+        or address.is_multicast
+        or address.is_unspecified
+    ):
+        return False, "private or reserved address is not allowed"
+    return True, ""
+
+
+def _header(headers: Any, name: str) -> str:
+    """Read a response header from case-sensitive test doubles or HTTPX."""
+
+    wanted = name.lower()
+    try:
+        for key, value in headers.items():
+            if str(key).lower() == wanted:
+                return str(value or "")
+    except Exception:
+        return ""
+    return ""
+
+
+def _safe_cache_path(config: dict[str, Any], value: Any) -> Path | None:
+    """Accept only cache files beneath this source's cache directory."""
+
+    if not value:
+        return None
+    root = (_storage(config) / "archive" / ".cache").resolve()
+    try:
+        candidate = Path(str(value)).expanduser().resolve()
+        candidate.relative_to(root)
+    except (OSError, RuntimeError, ValueError):
+        return None
+    return candidate
+
+
 def _write_cache(path: Path, content: bytes) -> None:
     # Small cache writes can use the common atomic JSON helper only for JSON;
     # use a temporary sibling and replace here to preserve binary bytes.
@@ -180,8 +267,30 @@ def _robots_entry(
     if origin in robots_cache:
         return robots_cache[origin]
     robots_url = f"{origin}/robots.txt"
+    safe, _ = _safe_http_url(robots_url)
+    if not safe:
+        robots_cache[origin] = (None, 403)
+        return robots_cache[origin]
     try:
-        response = session.get(robots_url, headers={"User-Agent": _user_agent(config)}, timeout=_request_timeout(config), follow_redirects=True)
+        # Follow only a short, explicitly validated robots redirect chain.  A
+        # malicious or compromised issuer page must not turn this probe into
+        # an unvalidated request to a private host, while ordinary www to
+        # canonical-host redirects remain usable.
+        for _ in range(3):
+            response = session.get(robots_url, headers={"User-Agent": _user_agent(config)}, timeout=_request_timeout(config), follow_redirects=False)
+            redirect_status = int(getattr(response, "status_code", 0) or 0)
+            if redirect_status not in _REDIRECT_STATUS:
+                break
+            location = _header(getattr(response, "headers", {}), "location")
+            target, _ = urldefrag(urljoin(robots_url, location)) if location else ("", "")
+            safe, _ = _safe_http_url(target)
+            if not safe:
+                robots_cache[origin] = (None, 403)
+                return robots_cache[origin]
+            robots_url = target
+        else:
+            robots_cache[origin] = (None, 403)
+            return robots_cache[origin]
     except Exception:
         # Unknown robots policy is recorded as unavailable by the caller; do
         # not pretend a fetch was blocked or bypass the site with retries.
@@ -253,9 +362,9 @@ def _fetch(
     """Fetch one official IR URL with robots, cache, and bounded retries."""
 
     canonical, _ = urldefrag(url)
-    allowed, reason = _robots_allowed(config, session, robots_cache, canonical)
-    if not allowed:
-        raise RobotsBlocked(canonical)
+    safe, _ = _safe_http_url(canonical)
+    if not safe:
+        raise IRSourceError("issuer IR URL is not a safe public HTTP URL", blocked=True, status_code=400)
     prior = manifest.get(canonical, {}) if isinstance(manifest.get(canonical), dict) else {}
     headers = {"User-Agent": _user_agent(config), "Accept": "text/html,application/pdf,application/*,text/plain;q=0.8,*/*;q=0.1"}
     if prior.get("etag"):
@@ -264,23 +373,69 @@ def _fetch(
         headers["If-Modified-Since"] = str(prior["last_modified"])
     retries = _max_retries(config)
     for attempt in range(retries + 1):
-        try:
-            response = session.get(canonical, headers=headers, timeout=_request_timeout(config), follow_redirects=True)
-        except (httpx.RequestError, OSError) as exc:
-            if attempt >= retries:
-                raise IRSourceError(f"request failed for {canonical}: {_safe_error(exc)}") from exc
-            time.sleep(min(2.0 ** attempt, 8.0))
+        current_url = canonical
+        redirect_count = 0
+        request_headers = dict(headers)
+        response = None
+        status = 0
+        response_headers: dict[str, str] = {}
+        while True:
+            allowed, _ = _robots_allowed(config, session, robots_cache, current_url)
+            if not allowed:
+                raise RobotsBlocked(current_url)
+            try:
+                response = session.get(current_url, headers=request_headers, timeout=_request_timeout(config), follow_redirects=False)
+            except (httpx.RequestError, OSError) as exc:
+                response = None
+                if attempt >= retries:
+                    raise IRSourceError(f"request failed for {canonical}: {_safe_error(exc)}") from exc
+                time.sleep(min(2.0 ** attempt, 8.0))
+                break
+            status = int(getattr(response, "status_code", 0) or 0)
+            response_headers = {str(k): str(v) for k, v in getattr(response, "headers", {}).items()}
+            if status not in _REDIRECT_STATUS:
+                break
+            if redirect_count >= _MAX_REDIRECTS:
+                raise IRSourceError("issuer IR redirect chain exceeded the configured limit", status_code=status)
+            location = _header(getattr(response, "headers", {}), "location")
+            if not location:
+                raise IRSourceError("issuer IR redirect did not provide a location", status_code=status)
+            target, _ = urldefrag(urljoin(current_url, location))
+            safe, _ = _safe_http_url(target)
+            if not safe:
+                raise IRSourceError("issuer IR redirect target is not a safe public HTTP URL", blocked=True, status_code=status)
+            # Validators are for the requested URL.  Do not send an issuer's
+            # ETag or Last-Modified token to an unrelated CDN target.
+            request_headers.pop("If-None-Match", None)
+            request_headers.pop("If-Modified-Since", None)
+            current_url = target
+            redirect_count += 1
+        # A transport exception that is retryable has already slept and
+        # broken out of the redirect loop.  Start the next bounded attempt.
+        if response is None:
             continue
-        status = int(getattr(response, "status_code", 0) or 0)
-        response_headers = {str(k): str(v) for k, v in getattr(response, "headers", {}).items()}
         if status == 304:
             cached = prior.get("cache_path")
-            if cached:
-                cached_path = Path(str(cached))
-                if cached_path.exists():
-                    return _Fetched(canonical, str(getattr(response, "url", canonical)), 304, cached_path.read_bytes(), response_headers)
+            cached_path = _safe_cache_path(config, cached)
+            if cached_path and cached_path.exists():
+                try:
+                    cached_content = cached_path.read_bytes()
+                    expected_hash = str(prior.get("content_hash") or "").strip().lower()
+                    within_limit = len(cached_content) <= _max_document_bytes(config)
+                    valid_hash = bool(re.fullmatch(r"[0-9a-f]{64}", expected_hash))
+                    intact = valid_hash and sha256_bytes(cached_content) == expected_hash
+                    if within_limit and intact:
+                        final_url = str(getattr(response, "url", current_url) or current_url)
+                        safe, _ = _safe_http_url(final_url)
+                        if not safe:
+                            raise IRSourceError("issuer IR response URL is not a safe public HTTP URL", blocked=True, status_code=304)
+                        return _Fetched(canonical, final_url, 304, cached_content, response_headers)
+                except OSError:
+                    pass
             # A stale conditional cache entry cannot produce a document; make
             # one unconditional attempt, still within the bounded retry cap.
+            request_headers.pop("If-None-Match", None)
+            request_headers.pop("If-Modified-Since", None)
             headers.pop("If-None-Match", None)
             headers.pop("If-Modified-Since", None)
             if attempt < retries:
@@ -299,17 +454,21 @@ def _fetch(
         content = bytes(getattr(response, "content", b"") or b"")
         if len(content) > _max_document_bytes(config):
             raise IRSourceError(f"issuer IR response exceeds configured size limit for {canonical}", status_code=status)
-        final_url = str(getattr(response, "url", canonical) or canonical)
+        final_url = str(getattr(response, "url", current_url) or current_url)
+        safe, _ = _safe_http_url(final_url)
+        if not safe:
+            raise IRSourceError("issuer IR response URL is not a safe public HTTP URL", blocked=True, status_code=status)
         cache = _cache_path(config, canonical)
         _write_cache(cache, content)
         manifest[canonical] = {
-            "etag": response_headers.get("etag", ""),
-            "last_modified": response_headers.get("last-modified", ""),
+            "etag": _header(response_headers, "etag"),
+            "last_modified": _header(response_headers, "last-modified"),
             "cache_path": str(cache),
             "retrieved": utc_now(),
             "status_code": status,
             "final_url": final_url,
-            "content_type": response_headers.get("content-type", ""),
+            "content_type": _header(response_headers, "content-type"),
+            "content_hash": sha256_bytes(content),
         }
         return _Fetched(canonical, final_url, status, content, response_headers)
     raise IRSourceError(f"issuer IR request exhausted retries for {canonical}")
@@ -333,7 +492,8 @@ def _urls(company: dict[str, Any]) -> list[str]:
         if not value:
             continue
         url, _ = urldefrag(str(value).strip())
-        if url and url not in seen and urlparse(url).scheme in {"http", "https"}:
+        safe, _ = _safe_http_url(url)
+        if safe and url not in seen:
             seen.add(url)
             result.append(url)
     return result
@@ -537,6 +697,23 @@ def _document_title(url: str, anchor_title: str, payload: bytes) -> str:
     return "Investor-relations material"
 
 
+def _document_extension(url: str, content_type: str) -> str:
+    """Prefer an explicit media type over a stale/misleading URL suffix."""
+
+    extension = extension_for(url, content_type)
+    media_type = (content_type or "").split(";", 1)[0].strip().lower()
+    media_extension = {
+        "application/pdf": ".pdf",
+        "application/vnd.ms-excel": ".xls",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+        "application/vnd.ms-powerpoint": ".ppt",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+        "text/html": ".html",
+        "text/plain": ".txt",
+    }.get(media_type)
+    return media_extension or extension
+
+
 def _classification_link_text(url: str) -> str:
     """Return URL text useful for kind detection without route labels.
 
@@ -580,8 +757,8 @@ def _collect_document(
     ticker = company_ticker(company)
     name = company_name(company, fallback=ticker)
     title = _document_title(fetched.final_url, anchor_title, fetched.content)
-    content_type = fetched.headers.get("content-type", "")
-    extension = extension_for(fetched.final_url, content_type)
+    content_type = _header(fetched.headers, "content-type")
+    extension = _document_extension(fetched.final_url, content_type)
     # Keep the requested link in the period decision.  A CDN or issuer edge
     # can redirect an older PDF to a generic/current endpoint; the anchor
     # title and requested URL are the package's own period evidence.  The
@@ -635,10 +812,11 @@ def _collect_document(
             "final_url": fetched.final_url,
             "http_status": fetched.status_code,
             "content_type": content_type,
+            "archive_extension": extension,
             # Transport headers are retained for cache/provenance audits but
             # are deliberately kept separate from issuer publication time.
-            "http_last_modified": fetched.headers.get("last-modified", ""),
-            "http_date": fetched.headers.get("date", ""),
+            "http_last_modified": _header(fetched.headers, "last-modified"),
+            "http_date": _header(fetched.headers, "date"),
             "publication_date_source": "issuer_explicit" if _publication_date(fetched) else "not_established",
             "period_basis": period_basis,
             "cdn_discovered_from_official_page": not _same_official_host(fetched.final_url, [str(x) for x in _urls(company)]),
@@ -668,10 +846,38 @@ def discover_ir(
         result.errors.append({"source": "ir", "source_key": source_key, "error": "company ticker is missing"})
         return result
     if not roots:
-        result.pending.append({"source": "ir", "source_key": source_key, "ticker": ticker, "reason": "official investor-relations URL is not configured"})
+        configured = bool(company.get("ir_url") or company.get("investor_relations_url") or company.get("ir_pages"))
+        if configured:
+            result.errors.append({
+                "source": "ir",
+                "source_key": source_key,
+                "ticker": ticker,
+                "error": "configured investor-relations URL is not a safe public HTTP URL",
+                "retryable": False,
+            })
+        else:
+            result.pending.append({"source": "ir", "source_key": source_key, "ticker": ticker, "reason": "official investor-relations URL is not configured"})
         return result
     manifest = _load_manifest(config)
-    queue = list(roots)
+    pending_seed_urls: list[str] = []
+    current_cik = normalize_cik(company.get("cik"))
+    pending_rows = config.get("_pending", [])
+    if isinstance(pending_rows, list):
+        for row in pending_rows:
+            if not isinstance(row, dict) or row.get("source_key") != source_key:
+                continue
+            pending_cik = normalize_cik(row.get("cik"))
+            if pending_cik and pending_cik != current_cik:
+                continue
+            candidate = str(row.get("url") or "").strip()
+            safe, _ = _safe_http_url(candidate)
+            if safe and candidate not in pending_seed_urls:
+                pending_seed_urls.append(candidate)
+    # Retry persisted document URLs directly as well as rediscovering them
+    # from the current IR pages.  Issuers often remove older links from an
+    # index after a release, so a page-only retry can otherwise lose durable
+    # pending work once the checkpoint moves.
+    queue = list(roots) + pending_seed_urls
     queued = set(queue)
     visited: set[str] = set()
     attempted_documents: set[str] = set()
@@ -704,8 +910,10 @@ def discover_ir(
                         blocked_stop = True
                         break
                     continue
-                content_type = fetched.headers.get("content-type", "").lower()
+                content_type = _header(fetched.headers, "content-type").lower()
                 if looks_like_document(fetched.final_url, "", content_type) and (Path(urlparse(fetched.final_url).path).suffix.lower() in {".pdf", ".xls", ".xlsx", ".ppt", ".pptx", ".doc", ".docx"} or "application/pdf" in content_type):
+                    if fetched.final_url in attempted_documents or page_url in attempted_documents:
+                        continue
                     period_hint = infer_period("", unquote(fetched.final_url))
                     if period_hint == "unknown" and unknown_documents >= max_unknown_documents:
                         continue

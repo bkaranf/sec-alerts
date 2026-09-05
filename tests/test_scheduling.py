@@ -10,7 +10,7 @@ from servicing_brief.scheduling import due, mark_handled, schedule_status, sched
 
 
 def _config(**overrides) -> dict:
-    schedule = {"timezone": "America/New_York", "times": ["07:00", "18:00"], "catch_up": True}
+    schedule = {"enabled": True, "timezone": "America/New_York", "times": ["07:00", "18:00"], "catch_up": True}
     schedule.update(overrides)
     return {"schedule": schedule}
 

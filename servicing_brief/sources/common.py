@@ -353,7 +353,10 @@ def archive_bytes(
     """
 
     data = bytes(payload)
-    digest = content_hash or sha256_bytes(data)
+    computed_digest = sha256_bytes(data)
+    if content_hash and str(content_hash).lower() != computed_digest:
+        raise ValueError("provided content hash does not match archived payload")
+    digest = computed_digest
     ext = extension if extension.startswith(".") else f".{extension}" if extension else ".bin"
     ext = ext.lower()
     folder = Path(storage).resolve() / "archive" / clean_part(ticker) / clean_part(period)

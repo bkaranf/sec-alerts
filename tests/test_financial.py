@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from decimal import Decimal
+from hashlib import sha256
 
 import pytest
 
@@ -26,7 +27,7 @@ def _fact(tmp_path, text: str, *, period: str = "2026-Q2", ticker: str = "TST", 
     path.write_text(text, encoding="utf-8")
     return Document(
         issuer="Test Bank", cik="1", title=name, kind=kind, source="ir", url=f"https://example.test/{name}",
-        published="2026-08-01", period=period, path=str(path), content_hash=name, metadata={"ticker": ticker},
+        published="2026-08-01", period=period, path=str(path), content_hash=sha256(path.read_bytes()).hexdigest(), metadata={"ticker": ticker},
     )
 
 
@@ -118,9 +119,10 @@ def test_ytd_standalone_only_allows_adjacent_same_year_flow() -> None:
 def test_metadata_facts_require_source_excerpt_and_location(tmp_path) -> None:
     path = tmp_path / "source.html"
     path.write_text("<p>No source figure is present.</p>", encoding="utf-8")
-    doc = Document(issuer="Test", cik="1", title="source", kind="release", source="ir", url="https://example.test/source", published="2026-08-01", period="2026-Q2", path=str(path), content_hash="x", metadata={"ticker": "TST", "facts": [{"metric": "servicing_fee_income", "value": "$12.30 million", "unit": "USD_millions", "scope": "servicing"}]})
+    doc = Document(issuer="Test", cik="1", title="source", kind="release", source="ir", url="https://example.test/source", published="2026-08-01", period="2026-Q2", path=str(path), content_hash=sha256(path.read_bytes()).hexdigest(), metadata={"ticker": "TST", "facts": [{"metric": "servicing_fee_income", "value": "$12.30 million", "unit": "USD_millions", "scope": "servicing"}]})
     assert extract_financial_facts(doc) == []
     path.write_text("<p>Servicing fee income $12.30 million.</p>", encoding="utf-8")
+    doc.content_hash = sha256(path.read_bytes()).hexdigest()
     doc.metadata["facts"][0].update({"location": "HTML text line 1", "excerpt": "Servicing fee income $12.30 million."})
     facts = extract_financial_facts(doc, config=GENERIC_CONFIG)
     assert len(facts) == 1 and facts[0].value == "12.30"

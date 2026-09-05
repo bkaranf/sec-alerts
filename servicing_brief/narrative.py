@@ -228,7 +228,9 @@ def _scope_quote_consistent(fact: Evidence) -> bool:
     """Check that a cited excerpt carries the population label in metadata."""
 
     scope = str(fact.scope or "").lower()
-    source = f"{fact.excerpt} {fact.definition}".lower()
+    # The archived excerpt is the source boundary. A caller-supplied
+    # definition cannot manufacture a servicing label for an unrelated quote.
+    source = str(fact.excerpt or "").lower()
     if not scope or scope in {"unknown", "bankwide", "mortgage_origination", "ambiguous_broader_mortgage"}:
         return False
     if "for_others" in scope or scope.endswith("_others"):
@@ -239,7 +241,9 @@ def _scope_quote_consistent(fact: Evidence) -> bool:
         return bool(re.search(r"\bMSRs?\b|mortgage\s+servicing\s+rights|owned\s+servicing", source, re.I))
     if scope.endswith("_owned") or scope == "servicing_owned":
         return bool(re.search(r"owned|bank[- ]owned", source, re.I))
-    return scope.startswith("servicing")
+    if scope.startswith("servicing"):
+        return bool(re.search(r"\bservicing\b|\bserviced\b|\bservicer(?:s)?\b|mortgage\s+servicing|subservic|\bMSRs?\b", source, re.I))
+    return False
 
 
 def _validate_claims(
@@ -291,6 +295,8 @@ def _validate_claims(
                 return "", (), "claim cites an unknown commentary id"
             commentary_ids = [str(value) for value in commentary_ids]
             cited_facts = [evidence_by_id[value] for value in ids]
+            if any(str(fact.status).lower() != "supported" for fact in cited_facts):
+                return "", (), "claim cites unsupported evidence"
             if any(not _scope_quote_consistent(fact) for fact in cited_facts):
                 return "", (), "claim cites an unsupported or mismatched business scope"
             tickers = {fact.ticker for fact in cited_facts if fact.ticker}
@@ -314,7 +320,10 @@ def _validate_claims(
                 # valid fee fact while inventing a different dollar amount.  Each
                 # numeric token must match a value in one of the cited records;
                 # otherwise omit the entire narrative and use evidence-only.
-                cited_values = {cited.decimal_value for cited in cited_facts}
+                try:
+                    cited_values = {cited.decimal_value for cited in cited_facts}
+                except (AssertionError, TypeError, ValueError):
+                    return "", (), "claim cites invalid financial evidence"
                 for token in number_tokens:
                     if _is_year_token(token) or _is_footnote_token(token):
                         continue

@@ -140,6 +140,12 @@ def _lookback_start(config: dict[str, Any], *, bootstrap: bool, checkpoints: dic
             overlap = 14
         try:
             checkpoint_date = datetime.fromisoformat(str(checkpoint).replace("Z", "+00:00")).date()
+            # A clock-skewed or manually edited checkpoint must never move
+            # the SEC query into the future.  Treat it as invalid and use the
+            # bounded normal lookback so current completed filings remain
+            # discoverable.
+            if checkpoint_date > now:
+                return (now - timedelta(days=days)).isoformat()
             start = checkpoint_date - timedelta(days=overlap)
             # A fresh checkpoint narrows discovery to the overlap window; a
             # stale checkpoint still receives the configured bounded lookback.
@@ -221,6 +227,12 @@ def _period_order(period: str) -> tuple[int, int]:
 
 def _filing_company(filing: Any, fallback: str) -> str:
     return str(metadata_value(filing, "company", default=fallback) or fallback).strip()
+
+
+def _filing_cik(filing: Any) -> str:
+    """Return an explicit filing CIK when the EdgarTools row exposes one."""
+
+    return normalize_cik(metadata_value(filing, "cik", "entity_cik", "cik_number", default=""))
 
 
 def _filing_url(filing: Any) -> str:
@@ -1201,7 +1213,27 @@ def _discover_sec_locked(
             result.errors.append({"source": "sec", "source_key": source_key, "ticker": ticker, "cik": cik, "error": "CIK not found by EdgarTools", "inactive": True})
             return result
         filings = _call_get_filings(edgar_company, filing_date)
-        candidates = _iter_filings(filings)
+        today_text = datetime.now(timezone.utc).date().isoformat()
+        # Filter scheduled/future index rows before checkpoint health checks.
+        # Otherwise a future periodic row can make ``has_periodic`` true and
+        # suppress the bounded fallback that would find the current quarter.
+        candidates = []
+        for filing in _iter_filings(filings):
+            filing_cik = _filing_cik(filing)
+            if filing_cik and filing_cik != cik:
+                result.errors.append({
+                    "source": "sec",
+                    "source_key": source_key,
+                    "ticker": ticker,
+                    "cik": cik,
+                    "filing_cik": filing_cik,
+                    "accession": _filing_accession(filing),
+                    "error": "EdgarTools returned a filing for a different CIK; row excluded",
+                    "retryable": False,
+                })
+                continue
+            if not _filing_date(filing) or _filing_date(filing) <= today_text:
+                candidates.append(filing)
 
         # A checkpoint is intentionally narrow for routine incremental runs,
         # but a prior run can advance it after seeing only a routine 8-K (or
@@ -1223,6 +1255,21 @@ def _discover_sec_locked(
                     fallback_filings = _call_get_filings(edgar_company, f"{fallback_start}:")
                     by_accession = {_filing_accession(filing): filing for filing in candidates if _filing_accession(filing)}
                     for filing in _iter_filings(fallback_filings):
+                        if _filing_date(filing) and _filing_date(filing) > today_text:
+                            continue
+                        filing_cik = _filing_cik(filing)
+                        if filing_cik and filing_cik != cik:
+                            result.errors.append({
+                                "source": "sec",
+                                "source_key": source_key,
+                                "ticker": ticker,
+                                "cik": cik,
+                                "filing_cik": filing_cik,
+                                "accession": _filing_accession(filing),
+                                "error": "EdgarTools returned a fallback filing for a different CIK; row excluded",
+                                "retryable": False,
+                            })
+                            continue
                         accession = _filing_accession(filing)
                         if accession and accession in by_accession:
                             continue
@@ -1298,7 +1345,11 @@ def _discover_sec_locked(
                         if "trigger_full_load" not in str(type_error) and "unexpected keyword" not in str(type_error):
                             raise
                         pending_filings = edgar_company.get_filings(accession_number=accession, amendments=True)
-                    resolved = _iter_filings(pending_filings)
+                    resolved = [
+                        filing for filing in _iter_filings(pending_filings)
+                        if (not _filing_date(filing) or _filing_date(filing) <= today_text)
+                        and (not _filing_cik(filing) or _filing_cik(filing) == cik)
+                    ]
                     if resolved:
                         candidates.extend(resolved)
                         existing_accessions.update(_filing_accession(filing) for filing in resolved)
@@ -1314,7 +1365,7 @@ def _discover_sec_locked(
                             "url": str(matching.get("url", "")),
                             "accession": accession,
                             "document": str(matching.get("document", "")),
-                            "reason": "pending SEC accession could not be resolved; retry on next run",
+                            "reason": "pending SEC accession could not be resolved or is future-dated; retry on next run",
                         })
                 except Exception as exc:
                     result.errors.append({

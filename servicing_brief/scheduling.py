@@ -150,7 +150,9 @@ def due(config: dict, state_db: Path, now: datetime | None = None) -> list[dict]
     """
 
     settings = _settings(config)
-    if settings.get("enabled") is False:
+    # Scheduling is opt-in.  A missing flag must not turn a freshly copied
+    # config into a recurring run, even when ``due`` is called directly.
+    if settings.get("enabled") is not True:
         return []
     zone = _zone(config)
     times = configured_times(config)
@@ -332,8 +334,19 @@ def _successful_callback_result(result: Any) -> bool:
     if isinstance(result, bool):
         return result
     if isinstance(result, Mapping):
-        if result.get("sources_failed"):
-            return False
+        # A useful report can still coexist with incomplete collection,
+        # preparation, or delivery.  Persisting the slot in any of those
+        # cases would suppress the catch-up retry that the next invocation
+        # needs.  Keep this check at the scheduler boundary because callers
+        # may return a compact status while retaining the detailed lists.
+        for failure_key in (
+            "sources_failed",
+            "errors",
+            "preparation_errors",
+            "delivery_errors",
+        ):
+            if result.get(failure_key):
+                return False
         status = str(result.get("status", "") or "").lower()
         return status in {"prepared", "no_new_disclosures", "provider_accepted", "already_accepted"}
     return False
@@ -351,7 +364,7 @@ def scheduled_run(
     returned under ``results``; mapping statuses used by the CLI are preserved.
     """
 
-    if _settings(config).get("enabled") is False:
+    if _settings(config).get("enabled") is not True:
         return {"status": "disabled", "slots": [], "results": []}
     with execution_lock(config, state_db) as acquired:
         if not acquired:
@@ -405,7 +418,7 @@ def schedule_status(config: dict, state_db: Path) -> dict:
             "SELECT run_key, scheduled_local, scheduled_utc, handled_at, detail FROM schedule_runs ORDER BY scheduled_utc DESC LIMIT 1"
         ).fetchone()
         return {
-            "enabled": _settings(config).get("enabled", True) is not False,
+            "enabled": _settings(config).get("enabled") is True,
             "timezone": zone.key,
             "times": [item.strftime("%H:%M") for item in configured_times(config)],
             "last_success": (

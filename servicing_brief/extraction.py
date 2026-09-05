@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from collections import defaultdict
+import hashlib
 import html as html_lib
 import json
 from pathlib import Path
@@ -29,6 +30,13 @@ from .evidence import (
     parse_source_number,
     scope_for,
 )
+
+
+_SHA256_RE = re.compile(r"[0-9a-fA-F]{64}")
+
+
+class ArchiveIntegrityError(ValueError):
+    """Raised when an archived document no longer matches its provenance hash."""
 
 
 @dataclass(frozen=True)
@@ -232,6 +240,32 @@ def _path_for(document: Any) -> Path | None:
     return path if path.exists() and path.is_file() else None
 
 
+def _verify_archive(document: Any, path: Path | None) -> None:
+    """Verify archived bytes before any source text can become evidence.
+
+    ``State.ingest`` verifies newly collected documents, but offline replays and
+    direct reporting calls can read a persisted path after it has been replaced.
+    A valid Document hash is therefore checked again at the extraction boundary.
+    Metadata-only documents with no path remain supported for deterministic unit
+    fixtures; a declared but missing path fails closed.
+    """
+
+    declared_path = str(_doc_value(document, "path", "") or "").strip()
+    if path is None:
+        if declared_path:
+            raise ArchiveIntegrityError("archived document is missing or unreadable")
+        return
+    expected = str(_doc_value(document, "content_hash", "") or "").strip()
+    if not _SHA256_RE.fullmatch(expected):
+        raise ArchiveIntegrityError("archived document has no valid SHA-256 provenance hash")
+    try:
+        actual = hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError as exc:
+        raise ArchiveIntegrityError("archived document is unreadable") from exc
+    if actual.casefold() != expected.casefold():
+        raise ArchiveIntegrityError("archived document hash does not match document metadata")
+
+
 def generic_extraction_enabled(document: Any, config: Mapping[str, Any] | None = None) -> bool:
     """Whether the conservative pattern matcher may run for this source.
 
@@ -291,6 +325,7 @@ def read_document_spans(document: Any) -> list[SourceSpan]:
     """
 
     path = _path_for(document)
+    _verify_archive(document, path)
     metadata = _metadata(document)
     mime = str(_doc_value(document, "mime_type", "")).lower()
     suffix = path.suffix.lower() if path else ""
@@ -481,7 +516,29 @@ def _expected_unit(spec: MetricSpec, raw: str, line: str, context: str = "") -> 
                 return "loans_thousands"
             return "loans"
         return normalise_unit("USD", lower)
-    unit = normalise_unit("USD", lower)
+    # ``normalise_unit`` also looks for contextual words such as "rate".  A
+    # monetary row can mention a rate in an adjacent qualifier, so an explicit
+    # money expectation must keep the value's currency signal ahead of that
+    # broader context.
+    unit = normalise_unit("USD", raw if ("$" in raw or any(symbol in raw for symbol in "€£")) else lower)
+    if spec.expected == "money" and unit == "percent" and not re.search(r"%|percent|basis\s+points?|\bbps?\b", raw, re.I):
+        unit = "USD"
+    if spec.expected == "money" and unit == "USD":
+        # Preserve an explicit table scale even when the wider context also
+        # mentions a rate or percentage row.
+        scale = None
+        for pattern in (
+            r"\b(?:dollars?|USD)\b[^\n|;:]{0,30}\b(?:millions?|billions?|thousands?|000s?|mm|bn)\b",
+            r"\b(?:amounts?|figures?|values?)\b[^\n|;:]{0,30}\b(?:in\s+)?(?:millions?|billions?|thousands?|000s?|mm|bn)\b",
+            r"\$\s*(?:in\s+)?(?:millions?|billions?|thousands?|000s?|mm|bn)\b",
+        ):
+            scale = re.search(pattern, context, re.I)
+            if scale:
+                break
+        if scale:
+            inherited = normalise_unit("USD", scale.group(0))
+            if inherited.startswith("USD_"):
+                unit = inherited
     if spec.expected == "money" and re.search(r"\b(?:UPB|unpaid\s+principal|principal\s+balance)\b", context, re.I):
         # The page may also contain percentage rows; a broad normalizer would
         # see '%' first.  UPB rows inherit only the explicit statement scale.
@@ -531,7 +588,10 @@ def _candidate_values(spec: MetricSpec, line: str, match: re.Match[str], context
         explicit_rate = "%" in raw or "bps" in raw.lower() or "basis point" in low
         explicit_money = any(marker in low for marker in ("$", "million", "billion", "thousand", "mm", "bn", "dollar"))
         if spec.expected == "rate":
-            if not explicit_rate and not re.search(r"rate|percent|percentage|delinquen|default", context, re.I):
+            # A page or PDF context window may contain a separate rate row.
+            # Require the row carrying this candidate to identify the rate so
+            # an earlier neighboring percentage cannot relabel a fee amount.
+            if not explicit_rate and not re.search(r"rate|percent|percentage|delinquen|default", line, re.I):
                 continue
         elif spec.expected in {"money", "per_loan"}:
             if "%" in raw or "bps" in raw.lower():
@@ -609,6 +669,8 @@ def _explicit_facts(document: Any, config: Mapping[str, Any] | None, period: str
         raw_value = str(fact.get("raw_value", fact.get("value", ""))).strip()
         if not metric or not raw_value:
             continue
+        if str(fact.get("status", "supported") or "supported").strip().lower() != "supported":
+            continue
         parsed, sign = parse_source_number(raw_value)
         if parsed is None:
             continue
@@ -629,6 +691,19 @@ def _explicit_facts(document: Any, config: Mapping[str, Any] | None, period: str
         definition = str(fact.get("definition", "")).strip() or metric.replace("_", " ")
         location = str(fact.get("location", metadata.get("location", ""))).strip()
         excerpt = str(fact.get("excerpt", "")).strip()
+        source_scope = excerpt.lower()
+        if scope == "servicing" and not re.search(r"\bservicing\b|\bserviced\b|\bservicer(?:s)?\b|mortgage\s+servicing|subservic|\bMSRs?\b", source_scope, re.I):
+            continue
+        if "for_others" in scope or scope.endswith("_others"):
+            if not re.search(r"for\s+others|third[- ]part(?:y|ies)|others", source_scope, re.I):
+                continue
+        if "subservic" in scope and "subservic" not in source_scope:
+            continue
+        if "owned_msr" in scope and not re.search(r"\bMSRs?\b|mortgage\s+servicing\s+rights|owned\s+servicing", source_scope, re.I):
+            continue
+        if scope.endswith("_owned") or scope == "servicing_owned":
+            if not re.search(r"owned|bank[- ]owned", source_scope, re.I):
+                continue
         # Caller-provided facts are accepted only when they carry a source quote
         # and location.  If archived bytes are available, the quote/value must be
         # present in those bytes as well; this prevents metadata from becoming a
@@ -649,7 +724,7 @@ def _explicit_facts(document: Any, config: Mapping[str, Any] | None, period: str
         elif re.sub(r"\s+", "", raw_value).lower() not in re.sub(r"\s+", "", excerpt).lower():
             continue
         result.append(Evidence(
-            id=str(fact.get("id") or evidence_id(str(_doc_value(document, "id", "")), metric, raw_value, location, fact_period)),
+            id=evidence_id(str(_doc_value(document, "id", "")), metric, raw_value, location, fact_period),
             document_id=str(_doc_value(document, "id", "")), issuer=str(_doc_value(document, "issuer", "")), ticker=ticker,
             metric=metric, value=decimal_string(parsed), raw_value=raw_value, unit=unit, currency=currency_for_unit(unit),
             period=fact_period, scope=scope, definition=definition, location=location, excerpt=excerpt,

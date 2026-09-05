@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from html import escape
+import hashlib
 import re
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -145,6 +146,38 @@ def _value(document: Any, key: str, default: Any = "") -> Any:
 def _metadata(document: Any) -> dict[str, Any]:
     value = _value(document, "metadata", {})
     return dict(value) if isinstance(value, Mapping) else {}
+
+
+def _latest_document_versions(documents: Sequence[Any]) -> list[Any]:
+    """Use the last observed version of one issuer URL and reporting period.
+
+    Publication dates commonly stay unchanged when an issuer replaces a file.
+    Observation timestamps establish version order; evidence hashes do not.
+    Missing timestamps retain every version. Ties at the newest timestamp
+    retain those candidates for conflict review, without reviving older data.
+    """
+    groups = {}
+    for doc in documents:
+        key = tuple(str(_value(doc, field)) for field in ("cik", "source", "url", "period"))
+        groups.setdefault(key, []).append(doc)
+    superseded = set()
+    for key, versions in groups.items():
+        if not key[2] or len(versions) < 2:
+            continue
+        observations = []
+        for doc in versions:
+            try:
+                stamp = datetime.fromisoformat(str(_value(doc, "retrieved")).replace("Z", "+00:00"))
+                if stamp.tzinfo is None:
+                    break
+                observations.append((stamp, doc))
+            except ValueError:
+                break
+        if len(observations) != len(versions):
+            continue
+        latest = max(stamp for stamp, _ in observations)
+        superseded.update(id(doc) for stamp, doc in observations if stamp < latest)
+    return [doc for doc in documents if id(doc) not in superseded]
 
 
 def _ticker(document: Any, config: Mapping[str, Any]) -> str:
@@ -328,12 +361,20 @@ def _source_name(doc):
 def _event_date(documents):
     """Distinguish a proved release date from a filing or server timestamp."""
     date_pattern = r"((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+\d{4})"
+    verified_documents = []
     for doc in documents:
+        try:
+            raw = Path(_value(doc, "path")).read_bytes()
+        except (OSError, ValueError):
+            continue
+        if hashlib.sha256(raw).hexdigest() != str(_value(doc, "content_hash")).lower():
+            continue
+        verified_documents.append(doc)
         if str(_value(doc, "kind")).upper() not in {"8-K", "8-K/A", "RELEASE"}:
             continue
         try:
-            text = BeautifulSoup(Path(_value(doc, "path")).read_text(encoding="utf-8"), "html.parser").get_text(" ", strip=True).replace("\ufffd", " ")
-        except (OSError, UnicodeError):
+            text = BeautifulSoup(raw.decode("utf-8"), "html.parser").get_text(" ", strip=True).replace("\ufffd", " ")
+        except UnicodeError:
             continue
         text = re.sub(r"\s+", " ", text)
         patterns = [r"Earnings Release\s+issued\s+" + date_pattern,
@@ -352,13 +393,13 @@ def _event_date(documents):
                 except ValueError:
                     continue
                 return {"date": date, "label": "Released", "source_url": _value(doc, "url"), "excerpt": match[0], "document_id": _value(doc, "id")}
-    for doc in documents:
+    for doc in verified_documents:
         if _value(doc, "kind") == "release" and _value(doc, "published"):
             if _value(doc, "source") == "sec":
                 return {"date": _value(doc, "published"), "label": "Filed", "source_url": _value(doc, "url"), "document_id": _value(doc, "id")}
             if _metadata(doc).get("publication_date_source") in {"issuer_content", "issuer_metadata"}:
                 return {"date": _value(doc, "published"), "label": "Released", "source_url": _value(doc, "url"), "document_id": _value(doc, "id")}
-    filings = [d for d in documents if _value(d, "source") == "sec" and _value(d, "published")]
+    filings = [d for d in verified_documents if _value(d, "source") == "sec" and _value(d, "published")]
     if filings:
         doc = min(filings, key=lambda d: _value(d, "published"))
         return {"date": _value(doc, "published"), "label": "Filed", "source_url": _value(doc, "url"), "document_id": _value(doc, "id")}
@@ -580,10 +621,22 @@ def build_report(config, documents, *, baseline=False, coverage=None, previous_d
     generated_at = datetime.now(timezone.utc).isoformat()
     previous_documents = [d for d in (previous_documents or []) if str(_value(d, "cik")).lstrip("0") in ciks]
     facts, commentary, errors = _facts_for_documents(documents, config)
+    # Retain the full canonical extraction, including superseded versions, but
+    # render and interpret only the current observed source content. A removed
+    # metric or passage must not reappear from an earlier copy of that URL.
+    canonical_facts, canonical_commentary = facts, commentary
+    documents = _latest_document_versions(documents)
+    active_ids = {str(_value(doc, "id")) for doc in documents}
+    facts = [fact for fact in facts if fact.document_id in active_ids]
+    commentary = [item for item in commentary if item.document_id in active_ids]
     current_period = max((str(_value(d, "period")) for d in documents), key=_period_sort, default="unknown")
     comparison_periods = set(_period_targets(current_period)) - {None}
     comparison_documents = [d for d in previous_documents if _value(d, "period") in comparison_periods]
     prior_facts, _, prior_errors = _facts_for_documents(comparison_documents, config, include_commentary=False)
+    canonical_prior_facts = prior_facts
+    previous_documents = _latest_document_versions(previous_documents)
+    prior_ids = {str(_value(doc, "id")) for doc in previous_documents}
+    prior_facts = [fact for fact in prior_facts if fact.document_id in prior_ids]
     view, changes = _company_view(config, documents, facts, prior_facts, commentary, baseline=baseline, coverage=coverage)
     view["company_identity"] = {
         "ticker": view["ticker"],
@@ -660,7 +713,7 @@ def build_report(config, documents, *, baseline=False, coverage=None, previous_d
     if view["table_citations"]:
         for row in view["rows"]:
             row["citations"] = ""
-    evidence = list({f.id: f for f in [*facts, *prior_facts, *changes]}.values())
+    evidence = list({f.id: f for f in [*canonical_facts, *canonical_prior_facts, *changes]}.values())
     ai_config = config.get("ai", {})
     ai_facts = [f for f in facts if f.period == view["raw_period"] and f.status == "supported"]
     ai_comments = [c for c in commentary if c.period == view["raw_period"] and re.match(r"(?:Mortgage |Residential )?Servicing\b|MSR\b", c.text, re.I)]
@@ -703,6 +756,7 @@ def build_report(config, documents, *, baseline=False, coverage=None, previous_d
     assert_reader_content(html, text, subject=view['subject'])
     report = {"subject": view["subject"], "company_identity": view["company_identity"], "generated_at": generated_at, "branding": {key: display_view["brand"][key] for key in ("ticker", "verified", "gap_reason", "primary_color", "public_logo_url")}, "event_date_evidence": view["event_date_evidence"], "chart": view["chart"], "html": html, "text": text, "evidence": evidence_json(evidence), "company_reports": {view["ticker"]: {"html": html, "text": text}}, "commentary": [c.to_dict() for c in commentary], "reviewed_context": view["reviewed_context"], "context_documents": [d.to_dict() for d in context_documents], "transcript_passages": [p.to_dict() for p in call_passages], "displayed_transcript_passage_ids": [p["id"] for p in view["call_passages"]], "changes": [c.to_dict() for c in changes], "narrative": narrative.to_dict(), "coverage": coverage, "extraction_errors": errors + prior_errors, "design_version": "astra-led-financial-brief-v7"}
     report['reviewed_context'] = [*view.get('earnings_context', []), *view['reviewed_context']]
+    report['commentary'] = [item.to_dict() for item in canonical_commentary]
     require_company_boundary(report, documents, context_documents=context_documents)
     return report
 

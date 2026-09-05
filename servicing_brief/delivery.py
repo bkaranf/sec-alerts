@@ -62,6 +62,8 @@ DEFAULT_LOCK_TIMEOUT_SECONDS = 0
 _KEY_HEADER = "X-Servicing-Brief-Message-Key"
 _PACKAGE_HEADER = "X-Servicing-Brief-Package-Key"
 _GENERATED_PRINT_MARKERS = ("generated_print", "generated-print", "generated print")
+_SMTP_SECURITY_MODES = {"ssl", "smtps", "implicit_tls", "implicit-tls", "starttls"}
+_PLAIN_EMAIL = re.compile(r"[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+\Z")
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 _BRAND_IMG_TAG = re.compile(r"<img\b[^>]*>", re.IGNORECASE | re.DOTALL)
 _HTML_ATTRIBUTE = re.compile(
@@ -140,19 +142,44 @@ def _recipient_error(config: Mapping[str, Any]) -> str:
     """Return a safe validation message for the single configured recipient."""
 
     settings = _settings(config)
-    raw = settings.get("recipient")
+    raw = _setting(settings, "recipient", "to", default=None)
     if raw is None:
-        # ``to`` is retained as a narrow compatibility spelling for local
-        # configs, but a plural recipients list is never silently accepted.
-        raw = settings.get("to")
+        raw = _setting(config, "recipient", "to", default=None)
     if raw is None:
-        raw = config.get("recipient") if isinstance(config, Mapping) else None
+        return ""
     if isinstance(raw, str):
-        if len([item for item in re.split(r"[,;]\s*", raw) if item.strip()]) != 1:
-            return "exactly one explicit email.recipient is required"
+        if not raw.strip():
+            return ""
+        values = [item.strip() for item in re.split(r"[,;]\s*", raw) if item.strip()]
     elif isinstance(raw, Sequence) and not isinstance(raw, (bytes, bytearray)):
-        if len(raw) != 1:
-            return "exactly one explicit email.recipient is required"
+        values = [str(item).strip() for item in raw if str(item).strip()]
+    else:
+        values = [str(raw).strip()]
+    if len(values) != 1:
+        return "exactly one explicit email.recipient is required"
+    if not _PLAIN_EMAIL.fullmatch(values[0]):
+        return "email.recipient must be one explicit plain email address"
+    return ""
+
+
+def _sender_error(config: Mapping[str, Any]) -> str:
+    """Return a safe validation message for the configured sender."""
+
+    sender = _from_address(config)
+    if not sender:
+        return ""
+    if not _PLAIN_EMAIL.fullmatch(sender):
+        return "email.from_address must be one explicit plain email address"
+    return ""
+
+
+def _smtp_security_error(config: Mapping[str, Any]) -> str:
+    security = str(_smtp_credentials(config).get("security", "") or "").lower()
+    if security not in _SMTP_SECURITY_MODES:
+        return (
+            "unsupported SMTP security mode; use implicit TLS (ssl) or "
+            "STARTTLS (starttls)"
+        )
     return ""
 
 
@@ -871,6 +898,12 @@ def _make_message(
     total_parts: int,
 ) -> EmailMessage:
     settings = _settings(config)
+    recipient_error = _recipient_error(config)
+    if recipient_error:
+        raise DeliveryError(recipient_error)
+    sender_error = _sender_error(config)
+    if sender_error:
+        raise DeliveryError(sender_error)
     recipients = _recipients(config)
     sender = _from_address(config)
     text_body, html_body = _report_bodies(report)
@@ -990,6 +1023,28 @@ def _package_key(
     return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
 
 
+def _part_message_key(
+    package_key: str,
+    group: Sequence[_Attachment],
+    *,
+    disambiguate_document_ids: bool = False,
+) -> str:
+    """Return a stable key for one MIME part.
+
+    Document IDs normally identify a source copy.  Include the content hash
+    when a malformed or legacy source set reuses an ID for different bytes so
+    two distinct attachment groups cannot share one persisted delivery row.
+    """
+
+    tokens = []
+    for item in group:
+        token = item.document_id
+        if disambiguate_document_ids:
+            token += ":" + item.content_hash
+        tokens.append(token)
+    return hashlib.sha256((package_key + "|" + "|".join(tokens)).encode()).hexdigest()[:32]
+
+
 def _pack_attachments(
     config: Mapping[str, Any],
     report: Mapping[str, Any],
@@ -1008,10 +1063,15 @@ def _pack_attachments(
     groups: list[list[_Attachment]] = []
     current: list[_Attachment] = []
     base_subject = str(report.get("subject", "Mortgage Servicing Brief") or "Mortgage Servicing Brief")
+    disambiguate_document_ids = len({item.document_id for item in attachments}) != len(attachments)
 
     def candidate(group: Sequence[_Attachment]) -> EmailMessage:
         marker_subject = f"{base_subject} (part 9999 of 9999)" if group or groups else base_subject
-        key = hashlib.sha256((package_key + "|" + "|".join(item.document_id for item in group)).encode()).hexdigest()[:32]
+        key = _part_message_key(
+            package_key,
+            group,
+            disambiguate_document_ids=disambiguate_document_ids,
+        )
         return _make_message(
             config,
             report,
@@ -1104,9 +1164,14 @@ def prepare_messages(
     package_key = _package_key(config, report, attachments, omissions)
     total_parts = len(groups)
     subject = str(report.get("subject", "Mortgage Servicing Brief") or "Mortgage Servicing Brief")
+    disambiguate_document_ids = len({item.document_id for item in attachments}) != len(attachments)
     paths: list[Path] = []
     for index, group in enumerate(groups, start=1):
-        part_key = hashlib.sha256((package_key + "|" + "|".join(item.document_id for item in group)).encode()).hexdigest()[:32]
+        part_key = _part_message_key(
+            package_key,
+            group,
+            disambiguate_document_ids=disambiguate_document_ids,
+        )
         part_subject = f"{subject} (part {index} of {total_parts})" if total_parts > 1 else subject
         message = _make_message(
             config,
@@ -1238,6 +1303,12 @@ def _configuration_result(config: Mapping[str, Any]) -> tuple[str | None, str]:
     sender = _from_address(config)
     if not sender:
         return "missing_sender", "email.from_address is not configured"
+    sender_error = _sender_error(config)
+    if sender_error:
+        return "invalid_sender", sender_error
+    security_error = _smtp_security_error(config)
+    if security_error:
+        return "invalid_smtp_security", security_error
     credentials = _smtp_credentials(config)
     missing: list[str] = []
     if not credentials["host"]:
@@ -1265,7 +1336,9 @@ def _open_smtp(credentials: Mapping[str, Any]):
             timeout=timeout,
             context=ssl.create_default_context(),
         )
-    return smtplib.SMTP(str(credentials["host"]), int(credentials["port"]), timeout=timeout)
+    if security == "starttls":
+        return smtplib.SMTP(str(credentials["host"]), int(credentials["port"]), timeout=timeout)
+    raise ValueError("unsupported SMTP security mode")
 
 
 def _smtp_send_one(config: Mapping[str, Any], parsed: Any, recipients: list[str]) -> tuple[str, str]:
@@ -1427,7 +1500,34 @@ def deliver_messages(
                 "SELECT status, attempts, last_error, provider_response, content_hash FROM delivery_messages WHERE message_key = ?",
                 (key,),
             ).fetchone()
-            if row and row[0] == "accepted" and str(row[4] or "") == digest:
+            if row and str(row[4] or "") != digest:
+                # A persisted key is also bound to the exact MIME bytes.  A
+                # preview can be edited or replaced while an earlier attempt
+                # is ambiguous; never send those new bytes under the old key
+                # after an operator enables a controlled retry.
+                state_name = str(row[0] or "delivery")
+                status = (
+                    "message_changed_after_acceptance"
+                    if state_name == "accepted"
+                    else "message_changed_after_delivery_state"
+                )
+                results.append(
+                    {
+                        "message_key": key,
+                        "package_key": package,
+                        "path": str(path),
+                        "subject": subject,
+                        "part_number": part,
+                        "total_parts": total,
+                        "status": status,
+                        "detail": (
+                            f"stored message key is in {state_name} state for different bytes; "
+                            "provider send not attempted"
+                        ),
+                    }
+                )
+                continue
+            if row and row[0] == "accepted":
                 results.append(
                     {
                         "message_key": key,
@@ -1438,20 +1538,6 @@ def deliver_messages(
                         "total_parts": total,
                         "status": "already_accepted",
                         "detail": "provider acceptance already recorded; no resend attempted",
-                    }
-                )
-                continue
-            if row and row[0] == "accepted" and str(row[4] or "") != digest:
-                results.append(
-                    {
-                        "message_key": key,
-                        "package_key": package,
-                        "path": str(path),
-                        "subject": subject,
-                        "part_number": part,
-                        "total_parts": total,
-                        "status": "message_changed_after_acceptance",
-                        "detail": "stored message key points to different bytes; provider send not attempted",
                     }
                 )
                 continue
@@ -1664,8 +1750,8 @@ def doctor_email(config: dict) -> list[dict]:
         },
         {
             "check": "sender",
-            "configured": bool(_from_address(config)),
-            "detail": "email.sender configured" if _from_address(config) else "email.sender is unset",
+            "configured": bool(_from_address(config)) and not _sender_error(config),
+            "detail": _sender_error(config) or ("email.sender configured" if _from_address(config) else "email.sender is unset"),
         },
         {
             "check": "smtp_host",
@@ -1684,8 +1770,8 @@ def doctor_email(config: dict) -> list[dict]:
         },
         {
             "check": "security",
-            "configured": credentials["security"] in {"ssl", "smtps", "implicit_tls", "implicit-tls", "starttls"},
-            "detail": f"authenticated SMTP over {credentials['security']}",
+            "configured": not _smtp_security_error(config),
+            "detail": _smtp_security_error(config) or f"authenticated SMTP over {credentials['security']}",
         },
         {
             "check": "send_gate",

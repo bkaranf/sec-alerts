@@ -10,6 +10,7 @@ import re
 from bs4 import BeautifulSoup
 import pymupdf
 from .evidence import Evidence, evidence_id, parse_decimal, decimal_string
+from .extraction import _verify_archive
 
 
 def _v(doc, key, default=""):
@@ -146,7 +147,11 @@ def extract_pfsi_html(doc, raw):
 
 def extract_issuer_tables(document):
     """Return recognized facts from the actual archive; no metadata fact injection."""
-    path = Path(_v(document, "path"))
+    raw_path = _v(document, "path", "")
+    path = Path(str(raw_path)) if raw_path else None
+    _verify_archive(document, path if path and path.exists() and path.is_file() else None)
+    if path is None:
+        return []
     cik = str(_v(document, "cik")).lstrip("0")
     if cik == "92230" and path.suffix.lower() == ".pdf":
         with pymupdf.open(path) as pdf:

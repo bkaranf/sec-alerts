@@ -54,6 +54,13 @@ def parse_decimal(value: Any, *, allow_missing: bool = False) -> Decimal | None:
             return None
         raise ValueError(f"missing financial value: {text!r}")
     text = text.translate(str.maketrans({ch: "-" for ch in _DASHES}))
+    # A standalone Unicode minus is a missing-cell marker, just like ``-``.
+    # Check after translation so all statement dash variants follow the same
+    # fail-closed path instead of reaching Decimal("-") and raising.
+    if text in _MISSING:
+        if allow_missing:
+            return None
+        raise ValueError(f"missing financial value: {value!r}")
     text = text.replace(",", "").replace("$", "").replace("€", "").replace("£", "")
     text = re.sub(r"\s+", "", text)
     negative = text.startswith("(") and text.endswith(")")
@@ -319,9 +326,30 @@ def _definitions_compatible(current: Evidence, prior: Evidence) -> bool:
         "owned", "others", "third", "subservic", "upb", "unpaid principal", "loan", "account", "portfolio",
         "residential", "commercial", "held for sale", "mortgage", "before msr", "including valuation", "excluding valuation",
     )
-    c_terms = {term for term in population_terms if term in current.definition.lower()}
-    p_terms = {term for term in population_terms if term in prior.definition.lower()}
+    c_definition = current.definition.lower()
+    p_definition = prior.definition.lower()
+    c_terms = {term for term in population_terms if term in c_definition}
+    p_terms = {term for term in population_terms if term in p_definition}
     if c_terms != p_terms and (c_terms or p_terms):
+        return False
+    # Presence alone does not distinguish a population that includes a class
+    # from one that explicitly excludes it.  Keep these qualifiers in the
+    # compatibility signature so arithmetic cannot compare unlike bases.
+    def qualifier_signature(value: str) -> set[str]:
+        signature: set[str] = set()
+        if re.search(r"\b(?:includ(?:e|es|ed|ing)|inclusion|inclusive)\b", value):
+            signature.add("include")
+        if re.search(r"\b(?:exclud(?:e|es|ed|ing)|exclusion|exclusive)\b|\bwithout\b", value):
+            signature.add("exclude")
+        if re.search(r"\bbefore\b", value):
+            signature.add("before")
+        if re.search(r"\bafter\b", value):
+            signature.add("after")
+        return signature
+
+    c_qualifiers = qualifier_signature(c_definition)
+    p_qualifiers = qualifier_signature(p_definition)
+    if c_qualifiers != p_qualifiers and (c_qualifiers or p_qualifiers):
         return False
     return _basis_signature(current) == _basis_signature(prior)
 

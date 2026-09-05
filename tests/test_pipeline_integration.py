@@ -214,6 +214,41 @@ def test_source_failure_does_not_prevent_other_coverage(fixture_pipeline):
     config, calls, doc = fixture_pipeline
     response = run(config, collector=lambda *a, **k: SourceResult(documents=[doc("good")], errors=[{"issuer": "OTHER", "status": "blocked"}]))
     assert response["reports"] and response["sources_failed"]
+    assert response["status"] == "partial_failure"
+
+
+def test_collection_failure_remains_visible_after_outstanding_send(fixture_pipeline):
+    config, calls, doc = fixture_pipeline
+    run(config, collector=lambda *a, **k: SourceResult(documents=[doc("release")]))
+    _write_valid_reader_review(config)
+
+    response = run(config, send=True, collector=lambda *a, **k: SourceResult(
+        errors=[{"issuer": "FIX", "status": "blocked"}]))
+
+    assert response["status"] == "partial_failure"
+    assert response["delivery"] == [{"status": "accepted"}]
+    assert len(calls["sends"]) == 1
+    state = State(Path(config["_storage"]) / "state.sqlite3")
+    try:
+        assert state.outstanding() == []
+        assert state.status()["recent_runs"][0]["status"] == "partial_failure"
+    finally:
+        state.close()
+
+
+def test_cli_returns_failure_for_partial_collection(fixture_pipeline, monkeypatch, capsys):
+    from servicing_brief import cli, sources
+
+    config, calls, doc = fixture_pipeline
+    monkeypatch.setattr(cli, "load_config", lambda path: config)
+    monkeypatch.setattr(cli, "configure_logging", lambda path: None)
+    monkeypatch.setattr(sources, "collect", lambda *a, **k: SourceResult(
+        documents=[doc("good")], errors=[{"issuer": "OTHER", "status": "blocked"}]))
+
+    assert cli.main(["run-once", "--dry-run"]) == 2
+    response = json.loads(capsys.readouterr().out)
+    assert response["reports"] and response["sources_failed"]
+    assert not calls["sends"]
 
 
 def test_failed_collection_is_not_reported_as_no_new_disclosures(fixture_pipeline):

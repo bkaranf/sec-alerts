@@ -215,7 +215,10 @@ def _run_locked(config, *, bootstrap=False, send=False, offline=False, collector
                 and all(d.get("status") in {"accepted", "already_accepted"} for d in deliveries)
                 else "delivery_incomplete"
             )
-        if preparation_errors:
+        # Successful independent drafts or sends cannot turn an incomplete
+        # source check into a successful run. Preserve per-message acceptance
+        # while exposing the collection failure to CLI callers and history.
+        if preparation_errors or (result.errors and (outputs or deliveries or delivery_errors)):
             result_status = "partial_failure"
         response = {"status": result_status, "reports": outputs, "delivery": deliveries, "delivery_errors": delivery_errors, "sources_failed": result.errors, "preparation_errors": preparation_errors, "pending": result.pending}
         state.finish_run(run_id, result_status, json.dumps(response))

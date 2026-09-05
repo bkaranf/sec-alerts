@@ -74,9 +74,12 @@ def collect(
     # first provenance record; root persistence still owns cross-run hash
     # deduplication and revision tracking.
     unique = []
-    seen: set[tuple[str, str, str]] = set()
+    # The same issuer CDN URL and bytes can legitimately appear in more than
+    # one configured source record.  CIK is part of identity here; omitting it
+    # can silently discard a second issuer's document before State sees it.
+    seen: set[tuple[str, str, str, str]] = set()
     for document in combined.documents:
-        key = (document.source, document.url, document.content_hash)
+        key = (document.cik, document.source, document.url, document.content_hash)
         if key in seen:
             continue
         seen.add(key)
