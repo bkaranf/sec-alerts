@@ -2,6 +2,8 @@ Build, verify, and hand off Mortgage Servicing Earnings Brief using the revised 
 
 Core display controls: apply the P0 rules in AGENTS.md and docs/UI_CONTENT_STANDARD.md during design, implementation, review and release. No em dashes in reader-facing surfaces. Display all negative financial values in parentheses while preserving signed underlying evidence and calculations. Validate actual final rendered and packaged output; changed artifacts require fresh checks.
 
+Persistent project workflow: https://github.com/bkaranf/sec-alerts is the private source of truth for all future work. Follow the GitHub project-memory section in AGENTS.md: use a connected checkout or worktree, synchronize safely, verify changes, commit and push completed authorized work, and confirm the remote commit. Keep secrets and local runtime artifacts excluded; report any unpublished work explicitly.
+
 ### Task Execution & Autonomy
 
 - For implementation or fix requests, carry the authorized work through implementation and relevant verification. Do not stop at a proposed plan when you can proceed.

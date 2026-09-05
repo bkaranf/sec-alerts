@@ -2,6 +2,14 @@
 
 Read `GOAL.md`, `GOAL_PROMPT.txt`, `docs/UI_CONTENT_STANDARD.md`, and the applicable interfaces in `CONTRACTS.md` before relevant work. Preserve other agents' edits and existing evidence and sent artifacts.
 
+## Project memory: GitHub is the source of truth
+
+- All future project work belongs to the private repository [bkaranf/sec-alerts](https://github.com/bkaranf/sec-alerts). Use a clone or worktree connected to this repository, including this existing local checkout. Do not create a disconnected project copy or a separate repository for continuing work.
+- Before changes, verify the repository root, `origin`, current branch and worktree status. Fetch current remote state and synchronize safely before building on it; preserve uncommitted work and other contributors' changes.
+- Use `codex/` branches for new development branches. Follow existing branch protection and review requirements; never force-push or overwrite unrelated changes merely to synchronize.
+- Carry completed, authorized code, tests, documentation and project-instruction changes through relevant verification, commit and push to this repository without asking again for routine publication. Verify the remote branch contains the resulting commit before reporting it saved to GitHub. If access or a required check blocks the push, preserve the local work and state precisely what remains unpublished.
+- Keep credentials, local configuration, downloaded archives, email history and generated runtime artifacts excluded according to `.gitignore`. This GitHub workflow does not authorize email sends, deployment, destructive changes or bypassing required approval gates.
+
 ## Core brief controls
 
 - Each servicing brief and each default email contains exactly one company and one earnings event. Several releases produce separate drafts.

@@ -4,6 +4,8 @@ A local, email-first Python utility for mortgage-servicing disclosure monitoring
 
 ## Repository contents
 
+The private [bkaranf/sec-alerts repository](https://github.com/bkaranf/sec-alerts) is the source of truth for future work. Make changes in a connected checkout or worktree, then verify, commit and push them. The standing workflow is recorded in [AGENTS.md](AGENTS.md).
+
 The repository versions the Python code, templates, controls and documentation, deterministic source fixtures, and official brand assets. Source collection archives, email history, local configuration and credentials, generated review snapshots, and runtime state remain local for the initial private publication. Tools under `tools` that inspect historical snapshots therefore require the corresponding locally collected inputs.
 
 Six legacy path source files under `output/five-company-review` are intentionally retained for tools and tests: `render_email.py`, `email-template.html.j2`, `package_email.py`, `add_charts.py`, `audit_redesign.py`, and `validate_reviews.py`. They are explicit exceptions to the generated-output ignore rule and stay at their current paths.
