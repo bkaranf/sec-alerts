@@ -88,7 +88,9 @@ Numerical tables currently use verified Truist and PennyMac source-layout rules.
 
 The PennyMac Q2 2026 example also includes reviewed presentation and filing context. These notes are bound to the issuer, reporting period, document hashes and original slide images in `servicing_brief/reviewed_context.json`; they are omitted if a source changes. This is a reviewed example package, not a claim of automatic interpretation of every future presentation. Transcript selection uses recognizable speaker and section structure and keeps conversational figures out of financial tables.
 
-The optional OpenAI summarization path requires a separate API key and `uv sync --extra ai`. It is disabled by default. Source facts and numerical tables are deterministic; evidence-only briefings remain available if AI credentials are absent, the API fails, or claims cannot be validated.
+The **AI Analysis** section follows **Questions** and contains original source-grounded prose in [the public voice](PUBLIC_VOICE.md). An AI agent authors the complete argument from the issuer documents, financial evidence and available call material. `analysis.build_analysis_prompt` reads the guide and prepares the authoring packet. Save the reviewed essay in `servicing_brief/reviewed_analysis/{ticker}-{event}.json`, or set `analysis.catalog_path` to its JSON path. The renderer verifies the company, event and original source hashes and preserves citations and supporting rationale. A changed event or source needs fresh authorship and review; the section is omitted when no matching essay exists. This authoring workflow does not require a separate API key.
+
+The separate optional API feature selects additional cited source excerpts. It requires an API key and `uv sync --extra ai` and is disabled by default. Financial tables come from validated evidence, and deterministic briefings remain available when credentials are missing, the API fails or selected excerpts fail validation. Enabling this excerpt selector alone does not create original AI Analysis.
 
 ## Troubleshooting
 

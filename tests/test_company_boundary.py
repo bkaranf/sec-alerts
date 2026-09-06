@@ -173,7 +173,10 @@ def test_prepare_and_delivery_reject_changed_strict_mime_before_smtp(tmp_path: P
     )[0]
     parsed_message = BytesParser(policy=policy.default).parsebytes(path.read_bytes())
     html_part = next(part for part in parsed_message.walk() if part.get_content_type() == "text/html")
-    html_part.set_content(html_part.get_content().replace("data-brief-company='TD'", "data-brief-company='PFSI'"), subtype="html")
+    from bs4 import BeautifulSoup
+    changed_body = BeautifulSoup(html_part.get_content(), 'html.parser')
+    changed_body.select_one('[data-brief-company]')['data-brief-company'] = 'PFSI'
+    html_part.set_content(str(changed_body), subtype="html")
     path.write_bytes(parsed_message.as_bytes())
     opened: list[bool] = []
     monkeypatch.setattr(delivery.smtplib, "SMTP_SSL", lambda *a, **k: opened.append(True))

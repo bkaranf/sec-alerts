@@ -61,6 +61,48 @@ def _install_openai(monkeypatch, response_factory):
     return calls
 
 
+def test_original_ai_analysis_reaches_report_and_both_email_alternatives(tmp_path: Path) -> None:
+    from email import policy
+    from email.parser import BytesParser
+    from bs4 import BeautifulSoup
+
+    document = _release_document(tmp_path)
+    paragraph = (
+        "The revenue increase puts the next question on the cost side of servicing. "
+        "Slower prepayments and custodial income can improve reported revenue while leaving "
+        "the expense of financing and servicing the portfolio unresolved. The disclosed fee "
+        "income alone does not establish cash returns or servicing profit."
+    )
+    catalog = {
+        "version": 1, "ticker": "TST", "cik": "1", "report_period": "2026-Q2",
+        "title": "AI Analysis", "author": "AI",
+        "sections": [{"id": "cost-question", "title": "What the revenue leaves open", "text": paragraph,
+                      "sources": [{"number": 1, "source_url": document.url,
+                                   "archive_path": document.path, "archive_sha256": document.content_hash,
+                                   "location": "Servicing fee income table and revenue discussion"}],
+                      "support": [{"kind": "analytical_inference", "claim": "Revenue alone does not establish profit.",
+                                   "source_numbers": [1], "basis": "The source gives revenue and its drivers without servicing expense."}]}],
+    }
+    path = tmp_path / "analysis.json"
+    path.write_text(json.dumps(catalog), encoding="utf8")
+    config = _config(tmp_path, ai={"enabled": False})
+    config["analysis"] = {"catalog_path": str(path)}
+    report = build_report(config, [document], baseline=True)
+    assert report["narrative"]["status"] == "disabled"
+    assert report["ai_analysis"]["sections"][0]["text"] == paragraph
+    soup = BeautifulSoup(report["html"], "html.parser")
+    assert paragraph in soup.get_text(" ", strip=True).replace("  ", " ")
+    assert "Investor questions" not in report["html"]
+    assert report["text"].index("AI Analysis") < report["text"].index("Sources\n")
+    paths = prepare_messages(config, report, [document], tmp_path / "mime")
+    message = BytesParser(policy=policy.default).parsebytes(paths[0].read_bytes())
+    html = message.get_body(preferencelist=("html",)).get_content()
+    text = message.get_body(preferencelist=("plain",)).get_content()
+    assert "AI Analysis" in html and paragraph in text
+    assert "What the revenue leaves open" in html
+    assert "<section" not in html
+
+
 def _config(tmp_path: Path, *, ai: dict) -> dict:
     return validate_config(
         {
@@ -120,6 +162,11 @@ def test_enabled_narrative_is_visible_and_cannot_change_deterministic_table(monk
     assert enabled["narrative"]["status"] == "generated"
     assert enabled["narrative"]["used_ai"] is True
     assert len(calls) == 1
+    from servicing_brief.narrative import _PROMPT_POLICY
+    assert _PROMPT_POLICY in calls[0]["input"]
+    assert "PUBLIC_VOICE.md | Analysis selection" in calls[0]["input"]
+    assert current_fact.id in calls[0]["input"]
+    assert source_comment.id in calls[0]["input"]
     assert source_comment.text in enabled["text"]
     assert source_comment.text in enabled["html"]
     assert source_comment.text not in disabled["text"]

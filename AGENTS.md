@@ -2,6 +2,8 @@
 
 Read `GOAL.md`, `GOAL_PROMPT.txt`, `docs/UI_CONTENT_STANDARD.md`, and the applicable interfaces in `CONTRACTS.md` before relevant work. Preserve other agents' edits and existing evidence and sent artifacts.
 
+Before creating or editing user-facing prose, read the repository-root PUBLIC_VOICE.md and apply its mode-specific rules. Keep engineering documentation technical. Preserve factual safeguards and product behavior.
+
 ## Project memory: GitHub is the source of truth
 
 - All future project work belongs to the private repository [bkaranf/sec-alerts](https://github.com/bkaranf/sec-alerts). Use a clone or worktree connected to this repository, including this existing local checkout. Do not create a disconnected project copy or a separate repository for continuing work.

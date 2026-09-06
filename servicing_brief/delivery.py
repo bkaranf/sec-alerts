@@ -30,6 +30,7 @@ from email import policy
 from email.message import EmailMessage
 from email.parser import BytesParser
 from email.utils import format_datetime
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 from urllib.parse import urlparse
@@ -41,7 +42,7 @@ except ImportError:  # pragma: no cover - dependency is declared by the project
 
 from .models import Document
 from .reader_content import assert_reader_mime
-from .branding import BrandRegistryError, lookup_brand, page_theme, validate_page_theme
+from .branding import BrandRegistryError, NEUTRAL_BRAND, apply_page_theme, lookup_brand, page_theme, validate_page_theme
 from .company_boundary import (
     BOUNDARY_HEADER,
     BOUNDARY_VERSION,
@@ -523,9 +524,11 @@ def _document_links_html(attachments: Sequence[_Attachment], omissions: Sequence
         "word-break:break-word;"
     )
     muted_style = "color:#606b75;font-size:12px;"
-    if theme:
-        section_style = section_style.replace('#fcfbf8', theme['paper_bg']).replace('#dce1e6', theme['rule_color'])
-        link_style = link_style.replace('#243f56', theme['link_color'])
+    theme = theme or page_theme(NEUTRAL_BRAND)
+    section_style = section_style.replace('#fcfbf8', theme['paper_bg']).replace('#dce1e6', theme['rule_color']).replace('#171c22', theme['body_color'])
+    heading_style = heading_style.replace('#171c22', theme['heading_color'])
+    link_style = link_style.replace('#243f56', theme['link_color'])
+    muted_style = muted_style.replace('#606b75', theme['secondary_color'])
     rows: list[str] = [f'<section class="document-links" aria-label="Original documents" style="{section_style}">']
     if attachments:
         rows.append(f'<h3 style="{heading_style}">Documents in this message</h3>')
@@ -880,6 +883,43 @@ def _message_bytes(message: EmailMessage) -> bytes:
     return message.as_bytes(policy=policy.SMTP)
 
 
+def _email_compatible_html(html_body: str) -> str:
+    """Keep styled section containers when Gmail sanitizes received mail.
+
+    Gmail can preserve these containers in compose and remove them, including
+    their inline colors, in the received message. Only the email copy changes;
+    standalone reports retain their semantic section elements.
+    """
+    line_starts = [0] + [match.end() for match in re.finditer("\n", html_body)]
+    replacements: list[tuple[int, int]] = []
+
+    class SectionTags(HTMLParser):
+        def replace_section(self, tag: str) -> None:
+            if tag != "section":
+                return
+            line, column = self.getpos()
+            start = line_starts[line - 1] + column
+            match = re.match(r"</?\s*(section)\b", html_body[start:], re.IGNORECASE)
+            if match:
+                replacements.append((start + match.start(1), start + match.end(1)))
+
+        def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+            self.replace_section(tag)
+
+        handle_startendtag = handle_starttag
+
+        def handle_endtag(self, tag: str) -> None:
+            self.replace_section(tag)
+
+    parser = SectionTags(convert_charrefs=False)
+    parser.feed(html_body)
+    parser.close()
+    # Preserve every other byte, including attributes, URLs, CSS and comments.
+    for start, end in reversed(replacements):
+        html_body = html_body[:start] + "div" + html_body[end:]
+    return html_body
+
+
 def _make_message(
     config: Mapping[str, Any],
     report: Mapping[str, Any],
@@ -960,6 +1000,8 @@ def _make_message(
     body_close = re.search(r"</body\s*>", html_body, re.IGNORECASE)
     full_html = (html_body[:body_close.start()] + supplement + html_body[body_close.start():]
                  if body_close else html_body + supplement)
+    full_html = _email_compatible_html(full_html)
+    full_html = apply_page_theme(full_html, theme or page_theme(NEUTRAL_BRAND))
     msg.add_alternative(full_html, subtype="html")
     embed_brand_logos(msg, full_html)
     for item in attachments:

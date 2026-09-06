@@ -17,8 +17,9 @@ from .evidence import Evidence, compatible, derive_absolute_change, derive_rate_
 from .extraction import Commentary, extract_commentary, extract_financial_facts, extract_transcript_passages, is_transcript_document
 from .narrative import generate_narrative
 from .reviewed_context import select_context
+from .analysis import AnalysisValidationError, select_analysis
 from .reader_content import assert_reader_content
-from .branding import brand_view, validate_page_theme
+from .branding import apply_page_theme, brand_view, validate_page_theme
 from .company_boundary import canonical_event, normalize_cik, require_company_boundary, validate_source_documents
 
 
@@ -59,9 +60,9 @@ _METRIC_LABELS = {
 # remains quoted; the full original commentary is retained in report.json.
 _RELEASE_SUMMARIES = {
     "The increase from the prior quarter was primarily due to lower realization of MSR cash flows, reflecting lower prepayment speeds, and an increase in earnings on custodial deposits and other income due to higher average balances.":
-        "Management says slower prepayments reduced MSR cash-flow realization. Higher average custodial balances also lifted earnings on deposits and other income.",
+        "Management attributed higher servicing revenue excluding valuation-related items primarily to slower prepayments, which reduced MSR cash-flow realization, and higher average custodial balances, which lifted earnings on deposits and other income.",
     "The increase from the prior quarter was primarily due to higher interest expense due to higher average balances of outstanding financing for MSRs.":
-        "Management attributed higher expenses excluding valuation items mainly to interest on larger MSR financing balances.",
+        "Management attributed higher expenses excluding valuation items primarily to higher interest expense on larger average MSR financing balances.",
 }
 
 _PFSI_TABLE_LABELS = {
@@ -484,15 +485,21 @@ def _company_view(config, documents, facts, prior_facts, commentary, *, baseline
     if ticker in {"TFC", "PFSI"} and first_row and first_row["qoq"] and not supporting_update:
         now, prior = first_row["fact"].decimal_value, first_row["qoq"].decimal_value
         direction = "rose" if now > prior else "fell" if now < prior else "held steady"
+        prior_period_label = _period_label(qoq_period)
+        prior_quarter_label = re.sub(r" \d{4}$", "", prior_period_label)
         editorial = (
             f"Residential servicing income {direction}."
             if ticker == "TFC"
-            else f"Servicing pretax income {direction} {'from' if direction != 'held steady' else 'versus'} {_period_label(qoq_period)}."
+            else f"Servicing pretax income {direction} {'from' if direction != 'held steady' else 'versus'} {prior_quarter_label}."
         )
         funding = by_metric.get("servicing_interest_expense")
         portfolio = by_metric.get("total_servicing_portfolio_upb")
         if ticker == "PFSI" and _source_exact_comparison(funding, "servicing_interest_expense") and funding["fact"].decimal_value > funding["qoq"].decimal_value:
-            editorial += " Servicing interest expense increased."
+            editorial = (
+                f"Servicing pretax income rose from {prior_quarter_label}, while financing costs increased."
+                if direction == "rose"
+                else editorial + " Financing costs increased."
+            )
         elif ticker == "TFC" and portfolio and portfolio["qoq"] and portfolio["fact"].decimal_value > portfolio["qoq"].decimal_value:
             editorial += " The portfolio grew."
     # Select a complete causal sentence from an earnings release. Never promote
@@ -503,16 +510,22 @@ def _company_view(config, documents, facts, prior_facts, commentary, *, baseline
         bridge = [by_metric.get(key) for key in ("adjusted_servicing_result", "servicing_valuation_related_items", "servicing_pretax_income")]
         if all(bridge):
             prevaluation, valuation, reported = [row["fact"] for row in bridge]
-            text = f"Servicing income excluding valuation-related items was {_amount(prevaluation)}"
-            if bridge[0]["qoq"]:
-                text += f", versus {_amount(bridge[0]['qoq'])} in {_period_label(qoq_period)}"
-            text += f". Valuation-related items of {_amount(valuation)} left reported servicing pretax income of {_amount(reported)}. The issuer-defined prevaluation measure includes mortgage servicing rights (MSR) cash-flow realization and financing expense; it is not cash earnings."
+            prior_prevaluation = bridge[0]["qoq"]
+            text = "Servicing income excluding valuation-related items"
+            if prior_prevaluation:
+                if prevaluation.decimal_value > prior_prevaluation.decimal_value:
+                    text += f" rose to {_amount(prevaluation)} from {_amount(prior_prevaluation)} in {_period_label(qoq_period)}"
+                elif prevaluation.decimal_value < prior_prevaluation.decimal_value:
+                    text += f" fell to {_amount(prevaluation)} from {_amount(prior_prevaluation)} in {_period_label(qoq_period)}"
+                else:
+                    text += f" was {_amount(prevaluation)}, unchanged from {_amount(prior_prevaluation)} in {_period_label(qoq_period)}"
+            else:
+                text += f" was {_amount(prevaluation)}"
+            text += f". Valuation-related items of {_amount(valuation)} left reported servicing pretax income at {_amount(reported)}. The issuer-defined prevaluation measure includes mortgage servicing rights (MSR) cash-flow realization and financing expense. It is not cash earnings."
             executive_intro = {"text": text, "citations": _citation([prevaluation, bridge[0]["qoq"], valuation, reported], doc_numbers, color="#dbe4e8")}
             # The opening already explains these two values. Keep only the
             # incremental funding-cost development in the next body section.
             points = [point for point in points if point.get("metric") not in {"adjusted_servicing_result", "servicing_pretax_income"}]
-            if bridge[0]["qoq"] and prevaluation.decimal_value > bridge[0]["qoq"].decimal_value and valuation.decimal_value < 0:
-                editorial = "Prevaluation income recovers; valuation effects limit reported profit."
     explanations = []
     for comment in commentary:
         if comment.document_id not in release_ids or not re.match(r"Servicing (?:revenues|expenses)", comment.text):
@@ -566,7 +579,7 @@ def _company_view(config, documents, facts, prior_facts, commentary, *, baseline
                 chart["reader_note"] = f"{quarter_direction} last quarter; {year_direction} a year ago."
     notes = []
     if main_rows and ticker == "TFC":
-        notes.append("Income covers residential servicing. The total portfolio includes servicing for others and bank-owned loans; it is broader than the third-party portfolio. This table does not establish servicing expense or pretax profit.")
+        notes.append("Income covers residential servicing. The total portfolio includes both loans serviced for others and bank-owned loans, so it is broader than the third-party portfolio. Servicing expense and pretax profit cannot be determined from this table.")
     if main_rows and ticker == "PFSI":
         notes.append("¹ Non-GAAP presentation; see the issuer's reconciliation. Portfolio UPB is a period-end balance and includes owned servicing, subservicing and loans held for sale.")
     if any(row["qoq"] is None or row["yoy"] is None for row in main_rows):
@@ -651,24 +664,52 @@ def build_report(config, documents, *, baseline=False, coverage=None, previous_d
     view["context_heading"] = "Portfolio and risk"
     view["reviewed_context"] = select_context([*documents, *previous_documents], cik=_value(documents[0], "cik"), period=view["raw_period"],
                                               new_ids=set(coverage.get("new_document_ids", [])) if view["supporting_update"] else None)
+    explicit_analysis = config.get("analysis", {}).get("catalog_path")
+    analysis_path = explicit_analysis or (
+        Path(__file__).with_name("reviewed_analysis") / f"{view['ticker']}-{view['raw_period']}.json"
+    )
+    analysis_error = ""
+    try:
+        analysis = select_analysis(
+            analysis_path, [*documents, *previous_documents], identity=view["company_identity"],
+            base_dir=config.get("_root", Path.cwd()), evidence=[*facts, *prior_facts],
+            required_document_ids=coverage.get("new_document_ids", ()) if view["supporting_update"] else (),
+        )
+    except AnalysisValidationError as exc:
+        if explicit_analysis:
+            raise
+        # A newly observed source package still earns its deterministic draft.
+        # Hold the entire old essay out and record the need for fresh authorship.
+        analysis = None
+        analysis_error = str(exc)
+    view["ai_analysis"] = analysis["sections"] if analysis else []
     context_ids = {p["document_id"] for entry in view["reviewed_context"] for p in entry["sources"]}
+    analysis_urls = {p["source_url"] for entry in view["ai_analysis"] for p in entry["sources"]}
+    context_ids.update(_value(d, "id") for d in previous_documents if _value(d, "url") in analysis_urls)
     context_documents = [d for d in previous_documents if _value(d, "id") in context_ids]
     for doc in context_documents:
         view["sources"].append({"number": len(view["sources"]) + 1, "name": _source_name(doc) + " · " + _period_label(_value(doc, "period")) + " context",
                                 "url": _value(doc, "url"), "date": _date(_value(doc, "published")), "format": "PDF" if str(_value(doc, "path")).lower().endswith(".pdf") else "HTML",
                                 "classification": str(_value(doc, "classification")).replace("sec-", "SEC ")})
     context_numbers = {source["url"]: source["number"] for source in view["sources"]}
-    for entry in view["reviewed_context"]:
+    for entry in view["ai_analysis"]:
+        for proof in entry["sources"]:
+            proof["catalog_number"] = proof["number"]
+    for entry in [*view["reviewed_context"], *view["ai_analysis"]]:
         for proof in entry["sources"]:
             proof["number"] = context_numbers.get(proof["source_url"], "source")
-    # Carry reviewed locations into the readable source list, including the
-    # text alternative. Hash-bound context must not leave a generic PDF link
-    # as the reader's only way to locate the retained explanation.
+    # Keep exact locations in citation tooltips and metadata. Repeating every
+    # paragraph's locator in a source-list label makes phone reading unwieldy.
     for source in view["sources"]:
         locations = [location for _, location, url in view["source_locations"] if url == source["url"]]
         locations.extend(proof["location"] for entry in view["reviewed_context"] for proof in entry["sources"] if proof["source_url"] == source["url"])
+        locations.extend(proof["location"] for entry in view["ai_analysis"] for proof in entry["sources"] if proof["source_url"] == source["url"])
         locations = list(dict.fromkeys(re.sub(r"^(?:Presentation, |10-Q, )", "", re.sub(r";? HTML text line \d+", "", location)).strip(" ,;") for location in locations))
-        if locations:
+        source["locations"] = locations
+        if analysis:
+            source["name"] = {"Earnings release": "Earnings release", "Presentation": "Earnings presentation",
+                              "Quarterly filing · 10-Q": "Form 10-Q"}.get(source["name"], source["name"])
+        elif locations:
             source["name"] += ": " + "; ".join(locations)
     view['earnings_context'] = [item for item in view['reviewed_context'] if item['id'] == 'pfsi-q226-advance-expense']
     view['reviewed_context'] = [item for item in view['reviewed_context'] if item['id'] != 'pfsi-q226-advance-expense']
@@ -751,11 +792,16 @@ def build_report(config, documents, *, baseline=False, coverage=None, previous_d
     if display_view.get('executive_intro'):
         display_view['executive_intro']['citations'] = display_view['executive_intro']['citations'].replace('#dbe4e8', display_view['brand']['theme']['hero_text'])
     html = env.get_template("brief.html.j2").render(**display_view)
+    html = apply_page_theme(html, display_view['brand']['theme'])
     validate_page_theme(html, view['ticker'])
     text = env.get_template("brief.txt.j2").render(**display_view)
     assert_reader_content(html, text, subject=view['subject'])
     report = {"subject": view["subject"], "company_identity": view["company_identity"], "generated_at": generated_at, "branding": {key: display_view["brand"][key] for key in ("ticker", "verified", "gap_reason", "primary_color", "public_logo_url")}, "event_date_evidence": view["event_date_evidence"], "chart": view["chart"], "html": html, "text": text, "evidence": evidence_json(evidence), "company_reports": {view["ticker"]: {"html": html, "text": text}}, "commentary": [c.to_dict() for c in commentary], "reviewed_context": view["reviewed_context"], "context_documents": [d.to_dict() for d in context_documents], "transcript_passages": [p.to_dict() for p in call_passages], "displayed_transcript_passage_ids": [p["id"] for p in view["call_passages"]], "changes": [c.to_dict() for c in changes], "narrative": narrative.to_dict(), "coverage": coverage, "extraction_errors": errors + prior_errors, "design_version": "astra-led-financial-brief-v7"}
     report['reviewed_context'] = [*view.get('earnings_context', []), *view['reviewed_context']]
+    report['ai_analysis'] = analysis
+    report['ai_analysis_status'] = {'status': 'source_validated' if analysis else 'requires_fresh_analysis' if analysis_error else 'not_authored', 'error': analysis_error}
+    report['sources'] = view['sources']
+    report['design_version'] = 'astra-led-financial-brief-v8-original-analysis'
     report['commentary'] = [item.to_dict() for item in canonical_commentary]
     require_company_boundary(report, documents, context_documents=context_documents)
     return report

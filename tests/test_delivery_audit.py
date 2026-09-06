@@ -133,6 +133,56 @@ def test_packaged_email_keeps_local_archive_paths_internal(tmp_path: Path) -> No
     assert str(source) not in delivery._document_links_html([], [omission])
 
 
+def test_received_email_keeps_summary_colors_when_section_tags_are_removed(tmp_path: Path) -> None:
+    from bs4 import BeautifulSoup
+    from servicing_brief.branding import lookup_brand, page_theme
+
+    report = _report()
+    theme = page_theme(lookup_brand("TFC"))
+    summary_style = f"background:{theme['hero_bg']};color:{theme['hero_text']}"
+    report["html"] = report["html"].replace(
+        "<p>Readout</p>",
+        f'<div data-brand-surface="paper" style="background:{theme["paper_bg"]}">'
+        '<section class="finding-band" data-brand-surface="hero" aria-labelledby="finding-heading" '
+        f'style="{summary_style}">'
+        '<h1 id="finding-heading">Quarterly result</h1>'
+        '<p>Valuation effects of ($77m). <a href="https://issuer.example/section/results">Source</a></p>'
+        '<section class="detail"><p>All commentary remains.</p></section></section></div>',
+    ).replace(
+        "<body ", f'<body data-brand-surface="page" style="background:{theme["page_bg"]}" '
+    )
+    report["company_reports"]["TFC"]["html"] = report["html"]
+    original_html = report["html"]
+    prepared = delivery.prepare_messages(_config(), report, [], tmp_path / "preview")[0]
+    message = BytesParser(policy=policy.default).parsebytes(prepared.read_bytes())
+    received = BeautifulSoup(message.get_body(preferencelist=("html",)).get_content(), "html.parser")
+    # Reproduce the received-Gmail transformation observed after compose QA.
+    for section in received.find_all("section"):
+        section.unwrap()
+
+    summary = received.select_one(".finding-band")
+    assert summary is not None
+    assert summary["style"] == summary_style
+    assert summary["aria-labelledby"] == "finding-heading"
+    assert summary.get_text(" ", strip=True) == (
+        "Quarterly result Valuation effects of ($77m). Source All commentary remains."
+    )
+    assert summary.a["href"] == "https://issuer.example/section/results"
+    assert received.select_one(".document-links") is not None
+    assert report["html"] == original_html
+
+
+def test_email_container_conversion_preserves_literals_and_original_attributes() -> None:
+    before = (
+        "<!doctype html>\r\n<!-- <section>source notation</section> -->\n"
+        "<body data-brief-company='TD'><SECTION title='literal <section>'>"
+        "C$631m &amp; ($77m). &lt;section&gt;</SECTION>"
+        '<style>.note::after {content:"<section>"}</style></body>'
+    )
+    expected = before.replace("<SECTION title=", "<div title=").replace("</SECTION>", "</div>")
+    assert delivery._email_compatible_html(before) == expected
+
+
 @pytest.mark.parametrize("recipient", [None, "", "   "])
 def test_prepare_allows_unset_recipient_for_preview(tmp_path: Path, recipient: str | None) -> None:
     config = _config(recipient=recipient) if recipient is not None else _config(recipient=None)

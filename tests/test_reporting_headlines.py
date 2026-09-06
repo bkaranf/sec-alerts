@@ -11,6 +11,7 @@ from jinja2 import Environment, FileSystemLoader
 
 from servicing_brief import reporting
 from servicing_brief.evidence import Evidence
+from servicing_brief.extraction import Commentary
 from servicing_brief.models import Document
 
 
@@ -52,6 +53,8 @@ def _fact(
 ) -> Evidence:
     definitions = {
         "servicing_pretax_income": "Servicing segment pretax income including valuation-related items.",
+        "adjusted_servicing_result": "Servicing segment pretax income before valuation-related items.",
+        "servicing_valuation_related_items": "Servicing segment valuation-related items.",
         "servicing_interest_expense": "Servicing segment interest expense in the issuer's non-GAAP presentation.",
         "total_servicing_portfolio_upb": "Total servicing portfolio unpaid principal balance.",
     }
@@ -122,11 +125,82 @@ def test_pfsi_headline_secondary_highlights_and_period_end_note_are_source_exact
         },
     )
 
-    assert view["editorial_headline"] == "Servicing pretax income rose from Q1 2026. Servicing interest expense increased."
+    assert view["editorial_headline"] == "Servicing pretax income rose from Q1, while financing costs increased."
     assert view["highlight_note"] == "Versus Q1 2026: stronger pretax income and higher interest expense."
     assert sum(row["highlight"] == "green" for row in view["rows"]) == 1
     assert sum(row["highlight"] == "red" for row in view["rows"]) == 1
     assert any("Portfolio UPB is a period-end balance" in note for note in view["notes"])
+
+
+def test_pfsi_opening_bridge_explains_measure_and_qualification(tmp_path: Path) -> None:
+    current_document = _document(tmp_path, "2026-Q2", "current")
+    prior_document = _document(tmp_path, "2026-Q1", "prior")
+    current = [
+        _fact(current_document, "adjusted_servicing_result", "99", period="2026-Q2"),
+        _fact(current_document, "servicing_valuation_related_items", "-77", period="2026-Q2"),
+        _fact(current_document, "servicing_pretax_income", "22", period="2026-Q2"),
+        _fact(current_document, "servicing_interest_expense", "140", period="2026-Q2"),
+        _fact(current_document, "total_servicing_portfolio_upb", "731", period="2026-Q2"),
+    ]
+    prior = [
+        _fact(prior_document, "adjusted_servicing_result", "57", period="2026-Q1"),
+        _fact(prior_document, "servicing_valuation_related_items", "-44", period="2026-Q1"),
+        _fact(prior_document, "servicing_pretax_income", "13", period="2026-Q1"),
+        _fact(prior_document, "servicing_interest_expense", "125", period="2026-Q1"),
+        _fact(prior_document, "total_servicing_portfolio_upb", "720", period="2026-Q1"),
+    ]
+    view, _changes = reporting._company_view(
+        CONFIG,
+        [current_document],
+        current,
+        prior,
+        [],
+        baseline=True,
+        coverage={"as_of": "2026-09-04T12:00:00+00:00", "new_document_ids": [current_document.id]},
+    )
+
+    assert view["executive_intro"]["text"] == (
+        "Servicing income excluding valuation-related items rose to $99m from $57m in Q1 2026. "
+        "Valuation-related items of ($77m) left reported servicing pretax income at $22m. "
+        "The issuer-defined prevaluation measure includes mortgage servicing rights (MSR) "
+        "cash-flow realization and financing expense. It is not cash earnings."
+    )
+
+
+def test_pfsi_revenue_explanation_names_supported_measure_and_keeps_citation(tmp_path: Path) -> None:
+    current_document = _document(tmp_path, "2026-Q2", "current")
+    commentary = Commentary(
+        id="revenue-commentary",
+        document_id=current_document.id,
+        issuer=current_document.issuer,
+        ticker="PFSI",
+        period="2026-Q2",
+        text=(
+            "Servicing revenues excluding valuation-related items totaled $369 million, up from $316 million in the prior quarter. "
+            "The increase from the prior quarter was primarily due to lower realization of MSR cash flows, reflecting lower prepayment speeds, "
+            "and an increase in earnings on custodial deposits and other income due to higher average balances."
+        ),
+        location="HTML text line 392",
+        source_url=current_document.url,
+        source_title=current_document.title,
+    )
+    view, _changes = reporting._company_view(
+        CONFIG,
+        [current_document],
+        [_fact(current_document, "servicing_pretax_income", "22", period="2026-Q2")],
+        [],
+        [commentary],
+        baseline=True,
+        coverage={"as_of": "2026-09-04T12:00:00+00:00", "new_document_ids": [current_document.id]},
+    )
+
+    assert view["explanations"][0]["summary"] == (
+        "Management attributed higher servicing revenue excluding valuation-related items primarily to slower prepayments, "
+        "which reduced MSR cash-flow realization, and higher average custodial balances, which lifted earnings on deposits and other income."
+    )
+    assert view["explanations"][0]["source_number"] == 1
+    assert view["explanations"][0]["url"] == current_document.url
+    assert view["explanations"][0]["location"] == "HTML text line 392"
 
 
 def test_highlight_note_is_visible_in_both_reader_templates(tmp_path: Path) -> None:
@@ -164,8 +238,8 @@ def test_highlight_note_is_visible_in_both_reader_templates(tmp_path: Path) -> N
     ("prior_values", "expected_headline"),
     [
         (None, "Servicing pretax income: $22m"),
-        ({"servicing_pretax_income": "22", "servicing_interest_expense": "140"}, "Servicing pretax income held steady versus Q1 2026."),
-        ({"servicing_pretax_income": "30", "servicing_interest_expense": "160"}, "Servicing pretax income fell from Q1 2026."),
+        ({"servicing_pretax_income": "22", "servicing_interest_expense": "140"}, "Servicing pretax income held steady versus Q1."),
+        ({"servicing_pretax_income": "30", "servicing_interest_expense": "160"}, "Servicing pretax income fell from Q1."),
     ],
 )
 def test_pfsi_missing_flat_and_reversed_comparisons_have_no_false_highlights(
@@ -193,6 +267,23 @@ def test_pfsi_incompatible_and_derived_interest_comparisons_do_not_claim_source_
         {"servicing_pretax_income": "13", "servicing_interest_expense": "125"},
         interest_derivation="absolute_change",
     )
-    assert derived_interest["editorial_headline"] == "Servicing pretax income rose from Q1 2026."
+    assert derived_interest["editorial_headline"] == "Servicing pretax income rose from Q1."
     assert derived_interest["highlight_note"] == "Versus Q1 2026: stronger pretax income."
     assert [row["highlight"] for row in derived_interest["rows"]].count("red") == 0
+
+
+def test_original_analysis_follows_questions_in_both_templates(tmp_path: Path) -> None:
+    from servicing_brief.branding import apply_page_theme, brand_view, validate_page_theme
+    view = _view(tmp_path, {"servicing_pretax_income": "13", "servicing_interest_expense": "125"})
+    view.update(subject="PFSI review", company_identity={"ticker": "PFSI", "cik": "0001745916", "event": "2026-Q2"},
+                brand=brand_view("PFSI", "PennyMac Financial Services"),
+                ai_analysis=[{"title": "The cost of growth", "text": "Growth creates a financing question that the portfolio balance alone cannot answer.",
+                              "sources": [{"number": 1, "source_url": "https://example.test/release", "location": "Servicing results"}]}])
+    env = Environment(loader=FileSystemLoader(TEMPLATES), autoescape=True)
+    html = apply_page_theme(env.get_template("brief.html.j2").render(**view), view["brand"]["theme"])
+    text = env.get_template("brief.txt.j2").render(**view)
+    headings = [h.get_text(strip=True) for h in BeautifulSoup(html, "html.parser").find_all("h2")]
+    assert headings.index("Questions") < headings.index("AI Analysis") < headings.index("Sources")
+    assert text.index("Questions") < text.index("AI Analysis") < text.index("Sources\n")
+    assert "Investor questions" not in text
+    validate_page_theme(html, "PFSI")

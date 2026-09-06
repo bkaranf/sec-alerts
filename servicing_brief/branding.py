@@ -315,16 +315,113 @@ def page_theme(brand: Mapping[str, Any]) -> dict[str, str]:
     accent = str(brand.get('accent_color', NEUTRAL_BRAND['accent_color']))
     if not _hex(primary) or not _hex(accent):
         raise BrandRegistryError('Page theme requires validated corporate colors')
-    hero_text = '#FFFFFF' if contrast_ratio(primary, '#FFFFFF') >= 4.5 else '#000000'
+    hero_text = max(('#FFFFFF', '#000000'), key=lambda color: contrast_ratio(primary, color))
+    surfaces = [_mix(primary, '#FFFFFF', amount) for amount in (0.10, 0.015, 0.055)]
     heading = _mix(primary, '#000000', 0.55)
-    return {
+    # Future registered colors receive the same contrast guarantee, including
+    # very pale primaries. The exact primary still fills the summary panel.
+    while min(contrast_ratio(heading, bg) for bg in surfaces) < 7:
+        heading = _mix(heading, '#000000', 0.90)
+    theme = {
         'hero_bg': primary.upper(), 'hero_text': hero_text, 'hero_accent': accent.upper(),
         'page_bg': _mix(primary, '#FFFFFF', 0.10),
         'paper_bg': _mix(primary, '#FFFFFF', 0.015),
         'section_bg': _mix(primary, '#FFFFFF', 0.055),
-        'heading_color': heading, 'link_color': heading,
+        'heading_color': heading, 'body_color': heading, 'link_color': heading,
+        'secondary_color': '#4C5968',
         'rule_color': _mix(primary, '#FFFFFF', 0.22),
+        'positive_bg': '#EAF2ED', 'positive_color': '#205034',
+        'negative_bg': '#FAECEB', 'negative_color': '#782A29',
+        'prior_bar_color': '#66798A', 'current_bar_color': heading,
+        'zero_color': '#66798A', 'logo_bg': '#FFFFFF',
+        'dark_page_bg': _mix(primary, '#0D1117', 0.10),
+        'dark_paper_bg': _mix(primary, '#17202A', 0.06),
+        'dark_section_bg': _mix(primary, '#202A35', 0.08),
+        'dark_heading_color': '#E6EAF0', 'dark_body_color': '#E6EAF0',
+        'dark_secondary_color': '#B6C2CF',
+        'dark_link_color': _mix(primary, '#FFFFFF', 0.25),
+        'dark_rule_color': _mix(primary, '#718194', 0.12),
+        'dark_positive_bg': '#173126', 'dark_positive_color': '#A4E7BD',
+        'dark_negative_bg': '#3D2226', 'dark_negative_color': '#FFB5AF',
+        'dark_prior_bar_color': '#889BAC',
+        'dark_current_bar_color': _mix(primary, '#FFFFFF', 0.25),
+        'dark_zero_color': '#8092A4', 'dark_logo_bg': '#FFFFFF',
+        'dark_hero_bg': primary.upper(), 'dark_hero_text': hero_text,
+        'dark_hero_accent': accent.upper(),
     }
+    validate_theme_contrast(theme)
+    return theme
+
+
+def validate_theme_contrast(theme: Mapping[str, str]) -> None:
+    """Fail closed for every generated light and dark semantic palette."""
+    for prefix in ('', 'dark_'):
+        pairs = [(fg, bg, minimum) for bg in ('page_bg', 'paper_bg', 'section_bg')
+                 for fg, minimum in (('body_color', 7), ('heading_color', 7),
+                                     ('secondary_color', 4.5), ('link_color', 4.5))]
+        pairs += [('positive_color', 'positive_bg', 7), ('negative_color', 'negative_bg', 7),
+                  ('prior_bar_color', 'section_bg', 3), ('current_bar_color', 'section_bg', 3),
+                  ('zero_color', 'section_bg', 3), ('hero_text', 'hero_bg', 4.5)]
+        for fg, bg, minimum in pairs:
+            if contrast_ratio(theme[prefix + fg], theme[prefix + bg]) < minimum:
+                raise BrandRegistryError(f'{prefix}{fg} on {bg} fails {minimum}:1 contrast')
+
+
+def apply_page_theme(html: str, theme: Mapping[str, str]) -> str:
+    """Bind explicit inline colors to literal dark rules after rendering.
+
+    Inline pairs are the light fallback for email clients that remove styles.
+    Attribute values include both colors so separately themed fragments cannot
+    overwrite one another. Original logo pixels and financial geometry remain
+    unchanged. No CSS variables or runtime JavaScript are required.
+    """
+    from bs4 import BeautifulSoup
+    validate_theme_contrast(theme)
+    soup = BeautifulSoup(html, 'html.parser')
+    for previous in soup.select('style[data-servicing-theme]'):
+        previous.decompose()
+    rules: dict[tuple[str, str], str] = {}
+    fg_keys = ('heading_color', 'secondary_color', 'positive_color', 'negative_color', 'hero_text')
+    bg_keys = ('page_bg', 'paper_bg', 'section_bg', 'positive_bg', 'negative_bg',
+               'prior_bar_color', 'current_bar_color', 'hero_bg', 'logo_bg')
+    for node in soup.find_all(style=True):
+        original_style = str(node['style'])
+        declarations = [part.strip() for part in original_style.split(';') if ':' in part]
+        updated_style = original_style
+        for declaration in declarations:
+            prop, value = (part.strip() for part in declaration.split(':', 1))
+            match = re.search(r'#[0-9a-fA-F]{6}\b', value)
+            if match:
+                color = match.group().upper()
+                keys = fg_keys if prop == 'color' else bg_keys if prop in ('background', 'background-color') else ('zero_color', 'rule_color', 'hero_accent') if prop.startswith('border') else ()
+                key = next((key for key in keys if theme[key].upper() == color), None)
+                if prop == 'color' and node.name == 'a' and not node.find_parent(attrs={'data-brand-surface': 'hero'}):
+                    key = 'link_color'
+                    color = theme[key]
+                    value = value[:match.start()] + color + value[match.end():]
+                    updated_style = updated_style.replace(declaration, f'{prop}:{value}')
+                if key:
+                    target = theme['dark_' + key]
+                    attr = 'data-sb-fg' if prop == 'color' else 'data-sb-bg' if prop in ('background', 'background-color') else 'data-sb-' + prop
+                    token = color[1:] + '_' + target[1:]
+                    node[attr] = token
+                    css_prop = 'background-color' if prop == 'background' else prop
+                    dark_value = value[:match.start()] + target + value[match.end():] if prop.startswith('border') else target
+                    rules[(attr, token)] = f'[{attr}="{token}"]{{{css_prop}:{dark_value}!important;}}'
+                    if prop in ('background', 'background-color') and node.name in ('table', 'td', 'th', 'body'):
+                        node['bgcolor'] = color
+        node['style'] = updated_style
+    css = ':root{color-scheme:light dark;supported-color-schemes:light dark;}\n@media (prefers-color-scheme: dark){\n' + '\n'.join(rules.values()) + '\n}'
+    style = soup.new_tag('style', attrs={'data-servicing-theme': 'contrast-v1'})
+    style.string = css
+    if soup.head:
+        for name in ('color-scheme', 'supported-color-schemes'):
+            if not soup.head.find('meta', attrs={'name': name}):
+                soup.head.append(soup.new_tag('meta', attrs={'name': name, 'content': 'light dark'}))
+        soup.head.append(style)
+    else:
+        soup.insert(0, style)
+    return str(soup)
 
 
 def validate_page_theme(html: str, ticker: str) -> None:
@@ -351,6 +448,30 @@ def validate_page_theme(html: str, ticker: str) -> None:
                 text_style = dict((k.strip().lower(), v.strip().upper()) for k,v in re.findall(r'([\w-]+)\s*:\s*([^;]+)', str(node_text.get('style', ''))))
                 if 'color' in text_style and text_style['color'] != expected['hero_text']:
                     raise BrandRegistryError(f'{ticker} summary text or citation has a stale color')
+    if soup.select_one('style[data-servicing-theme]'):
+        def inherited_color(node, *, background: bool, dark: bool) -> str:
+            for ancestor in (node, *node.parents):
+                if not getattr(ancestor, 'attrs', None):
+                    continue
+                properties = dict((key.strip().lower(), value.strip()) for key, value in re.findall(r'([\w-]+)\s*:\s*([^;]+)', str(ancestor.get('style', ''))))
+                value = properties.get('background-color', properties.get('background', '')) if background else properties.get('color', '')
+                color = re.fullmatch(r'(#[0-9A-Fa-f]{6})(?:\s*!important)?', value)
+                if color:
+                    token = ancestor.get('data-sb-bg' if background else 'data-sb-fg', '')
+                    if dark and re.fullmatch(r'[0-9A-F]{6}_[0-9A-F]{6}', token):
+                        return '#' + token.split('_')[1]
+                    return color[1]
+            return '#FFFFFF' if background else '#000000'
+        for node in soup.find_all():
+            if node.name in ('style', 'script', 'title') or node.find_parent('head'):
+                continue
+            if not any(isinstance(child, str) and child.strip() for child in node.children):
+                continue
+            for dark in (False, True):
+                fg = inherited_color(node, background=False, dark=dark)
+                bg = inherited_color(node, background=True, dark=dark)
+                if contrast_ratio(fg, bg) < 4.5:
+                    raise BrandRegistryError(f'{ticker} rendered {"dark" if dark else "light"} text fails 4.5:1 contrast: {node.get_text(" ", strip=True)[:70]}')
 
 
 __all__ = [

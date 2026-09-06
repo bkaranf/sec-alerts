@@ -6,11 +6,19 @@
 {% set page_bg = theme.page_bg|default('#f1f0ec', true) %}
 {% set paper_bg = theme.paper_bg|default('#fcfbf8', true) %}
 {% set section_bg = theme.section_bg|default('#f5f4f0', true) %}
-{% set heading_color = theme.heading_color|default('#171c22', true) %}
+{% set body_color = theme.body_color|default(theme.heading_color|default('#171c22', true), true) %}
 {% set secondary_color = theme.secondary_color|default('#606b75', true) %}
 {% set link_color = theme.link_color|default('#243f56', true) %}
 {% set rule_color = theme.rule_color|default('#dce1e6', true) %}
 {% set hero_accent = theme.hero_accent|default(brand.accent_color|default('#52606d', true), true) %}
+{% set positive_bg = theme.positive_bg|default('#eaf2ed', true) %}
+{% set positive_color = theme.positive_color|default('#28513a', true) %}
+{% set negative_bg = theme.negative_bg|default('#faeceb', true) %}
+{% set negative_color = theme.negative_color|default('#8b3f37', true) %}
+{% set prior_bar_color = theme.prior_bar_color|default('#cbd3db', true) %}
+{% set current_bar_color = theme.current_bar_color|default(theme.link_color|default('#243f56', true), true) %}
+{% set zero_color = theme.zero_color|default(theme.rule_color|default('#dce1e6', true), true) %}
+{% set logo_bg = theme.logo_bg|default('#ffffff', true) %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -19,7 +27,6 @@
   <title>{{ subject }}</title>
   <style>
     .chart-value { font-variant-numeric:tabular-nums; }
-    a { color:{{ link_color }} !important; }
     .finding-band a { color:{{ hero_text }} !important; }
     @media only screen and (max-width: 680px) {
       .paper { width: 100% !important; max-width: 100% !important; }
@@ -38,7 +45,16 @@
     }
     @media only screen and (max-width: 390px) {
       .headline { font-size: 24px !important; }
-      .finding-band { padding: 16px !important; }
+      .finding-band { padding: 12px !important; }
+      .page-wrap { padding: 12px 6px !important; }
+      .content { padding: 12px !important; }
+      .financial-table { font-size: 13px !important; table-layout: fixed !important; }
+      .financial-table th, .financial-table td { padding: 8px 3px !important; }
+      .financial-table th { font-size: 13px !important; white-space: normal !important; overflow-wrap: anywhere !important; }
+      .financial-table .metric-col { width: 48% !important; }
+      .financial-table .value-col { width: 26% !important; }
+      .financial-table .metric-label { white-space: normal !important; }
+      .financial-table .previous-value, .financial-table .current-value { font-size: 13px !important; }
     }
     @media only screen and (min-width: 681px) {
       .content { padding: 28px !important; }
@@ -51,17 +67,17 @@
     }
   </style>
 </head>
-<body data-brand-surface="page" data-brief-company="{{ company_identity.ticker }}" data-brief-cik="{{ company_identity.cik }}" data-brief-event="{{ company_identity.event }}" style="margin:0;padding:0;background:{{ page_bg }};color:{{ heading_color }};font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
-  <table role="presentation" class="surround" data-brand-surface="page" width="100%" cellpadding="0" cellspacing="0" style="width:100%;background:{{ page_bg }};">
+<body data-brand-surface="page" data-brief-company="{{ company_identity.ticker }}" data-brief-cik="{{ company_identity.cik }}" data-brief-event="{{ company_identity.event }}" style="margin:0;padding:0;background-color:{{ page_bg }};background:{{ page_bg }};color:{{ body_color }};font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
+  <table role="presentation" class="surround" data-brand-surface="page" width="100%" cellpadding="0" cellspacing="0" bgcolor="{{ page_bg }}" style="width:100%;background-color:{{ page_bg }};background:{{ page_bg }};color:{{ body_color }};">
     <tr>
-      <td align="center" style="padding:20px 12px;">
-        <table role="presentation" class="paper" data-brand-surface="paper" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:720px;background:{{ paper_bg }};">
+      <td class="page-wrap" align="center" bgcolor="{{ page_bg }}" style="padding:20px 12px;background-color:{{ page_bg }};background:{{ page_bg }};color:{{ body_color }};">
+        <table role="presentation" class="paper" data-brand-surface="paper" width="100%" cellpadding="0" cellspacing="0" bgcolor="{{ paper_bg }}" style="width:100%;max-width:720px;background-color:{{ paper_bg }};background:{{ paper_bg }};color:{{ body_color }};">
           <tr>
-            <td class="content" data-brand-surface="paper" style="padding:16px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;color:{{ heading_color }};background:{{ paper_bg }};">
-              <p style="margin:0;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:11px;line-height:1.25;font-weight:600;letter-spacing:.1px;color:{{ heading_color }};text-align:left;">The Servicing Brief</p>
+            <td class="content" data-brand-surface="paper" bgcolor="{{ paper_bg }}" style="padding:16px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;color:{{ body_color }};background-color:{{ paper_bg }};background:{{ paper_bg }};">
+              <p style="margin:0;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:11px;line-height:1.25;font-weight:600;letter-spacing:.1px;color:{{ body_color }};text-align:left;">The Servicing Brief</p>
               {{ issuer_masthead(ticker, name, period, event_date_label, event_date, brand) }}
 
-              <section class="finding-band" data-brand-surface="hero" aria-labelledby="finding-heading" style="margin:16px 0 20px;padding:16px;border-top:3px solid {{ hero_accent }};background:{{ hero_bg }};color:{{ hero_text }};font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
+              <section class="finding-band" data-brand-surface="hero" aria-labelledby="finding-heading" style="margin:16px 0 20px;padding:16px;border-top:3px solid {{ hero_accent }};background-color:{{ hero_bg }};background:{{ hero_bg }};color:{{ hero_text }};font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
                 <h1 id="finding-heading" class="headline" style="max-width:550px;margin:0 0 {% if headline_secondary|default('', true) or executive_intro|default('', true) %}8px{% else %}0{% endif %};font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:24px;line-height:1.15;font-weight:650;letter-spacing:-0.4px;color:{{ hero_text }};">{{ headline_main|default(editorial_headline, true) }}</h1>
                 {% if headline_secondary|default('', true) %}
                 <p class="headline-secondary" style="margin:0 0 {% if executive_intro|default('', true) %}10px{% else %}0{% endif %};font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.45;font-weight:400;color:{{ hero_text }};">{{ headline_secondary }}</p>
@@ -75,41 +91,42 @@
 
               {% set only_funding_point = points|length == 1 and 'fund' in (points[0].topic|default('', true)|lower) %}
               {% if points and not only_funding_point %}
-              <h2 class="brief-section-title" style="margin:24px 0 10px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:18px;line-height:1.35;font-weight:600;color:{{ heading_color }};">Key developments</h2>
+              <h2 class="brief-section-title" style="margin:24px 0 10px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:18px;line-height:1.35;font-weight:600;color:{{ body_color }};">Key developments</h2>
               {% for point in points %}
-              <p class="body-copy" style="margin:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;font-weight:400;color:{{ heading_color }};"><strong style="font-weight:600;">{{ point.topic }}.</strong> {{ point.text }} <span style="font-size:12px;line-height:1.35;white-space:nowrap;color:{{ secondary_color }};">{{ point.citations|safe }}</span></p>
+              <p class="body-copy" style="margin:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;font-weight:400;color:{{ body_color }};"><strong style="font-weight:600;">{{ point.topic }}.</strong> {{ point.text }} <span style="font-size:12px;line-height:1.35;white-space:nowrap;color:{{ secondary_color }};">{{ point.citations|safe }}</span></p>
               {% endfor %}
               {% endif %}
 
               {% if explanations or only_funding_point %}
-              <h2 class="brief-section-title" style="margin:24px 0 10px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:18px;line-height:1.35;font-weight:600;color:{{ heading_color }};">Why it moved</h2>
+              <h2 class="brief-section-title" style="margin:24px 0 10px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:18px;line-height:1.35;font-weight:600;color:{{ body_color }};">Why it moved</h2>
               {% for item in explanations %}
-              <p class="body-copy" style="margin:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:{{ heading_color }};">{% if item.summary %}{{ item.summary }}{% else %}<strong style="font-weight:600;">{{ item.topic }}.</strong> &ldquo;{{ item.text }}&rdquo;{% endif %} <a href="{{ item.url }}" title="{{ item.location }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.3;color:{{ link_color }};text-decoration:underline;">[{{ item.source_number }}]</a></p>
+              {% set explanation_words = (item.summary if item.summary else item.text).rsplit(' ', 1) %}
+              <p class="body-copy" style="margin:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:{{ body_color }};">{% if not item.summary %}<strong style="font-weight:600;">{{ item.topic }}.</strong> &ldquo;{% endif %}{% if explanation_words|length > 1 %}{{ explanation_words[0] }} {% endif %}<span class="citation-tail" style="white-space:nowrap;">{{ explanation_words[-1] }}{% if not item.summary %}&rdquo;{% endif %} <a href="{{ item.url }}" title="{{ item.location }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.3;color:{{ link_color }};text-decoration:underline;">[{{ item.source_number }}]</a></span></p>
               {% endfor %}
               {% if only_funding_point %}
-              <p class="body-copy" style="margin:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:{{ heading_color }};"><strong style="font-weight:600;">{{ points[0].topic }}.</strong> {{ points[0].text }} <span style="font-size:12px;line-height:1.35;white-space:nowrap;color:{{ secondary_color }};">{{ points[0].citations|safe }}</span></p>
+              <p class="body-copy" style="margin:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:{{ body_color }};"><strong style="font-weight:600;">{{ points[0].topic }}.</strong> {{ points[0].text }} <span style="font-size:12px;line-height:1.35;white-space:nowrap;color:{{ secondary_color }};">{{ points[0].citations|safe }}</span></p>
               {% endif %}
               {% endif %}
 
               {% if call_passages %}
-              <h2 class="brief-section-title" style="margin:20px 0 8px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:14px;line-height:1.35;font-weight:600;color:{{ heading_color }};">From the earnings call</h2>
+              <h2 class="brief-section-title" style="margin:20px 0 8px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:14px;line-height:1.35;font-weight:600;color:{{ body_color }};">From the earnings call</h2>
               {% for item in call_passages %}
               <p style="margin:0 0 3px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.35;font-weight:600;color:{{ secondary_color }};">{{ item.speaker }} · {{ item.label }}</p>
-              <p class="body-copy call-text" style="margin:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:{{ heading_color }};">&ldquo;{{ item.text }}&rdquo; <a href="{{ item.source_url }}" title="{{ item.location }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.3;color:{{ link_color }};text-decoration:underline;">[{{ item.number }}]</a></p>
+              <p class="body-copy call-text" style="margin:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:{{ body_color }};">&ldquo;{{ item.text }}&rdquo; <a href="{{ item.source_url }}" title="{{ item.location }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.3;color:{{ link_color }};text-decoration:underline;">[{{ item.number }}]</a></p>
               {% endfor %}
               {% endif %}
 
               {% if earnings_context %}
               {% for item in earnings_context %}
               {% if item.title or item.text %}
-              <p class="body-copy earnings-context" style="margin:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:{{ heading_color }};"><strong style="font-weight:600;">{{ item.title }}.</strong> {{ item.text }}{% for proof in item.sources %} <a href="{{ proof.source_url }}" title="{{ proof.location }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.3;color:{{ link_color }};text-decoration:underline;">[{{ proof.number }}]</a>{% endfor %}</p>
+              <p class="body-copy earnings-context" style="margin:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:{{ body_color }};"><strong style="font-weight:600;">{{ item.title }}.</strong> {{ item.text }}{% for proof in item.sources %} <a href="{{ proof.source_url }}" title="{{ proof.location }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.3;color:{{ link_color }};text-decoration:underline;">[{{ proof.number }}]</a>{% endfor %}</p>
               {% endif %}
               {% endfor %}
               {% endif %}
 
               {% if chart %}
-              <div class="earnings-chart" data-brand-surface="section" role="img" aria-label="{{ chart.title }}: {% for bar in chart.bars %}{{ bar.period }}: {{ bar.amount }}{% if not loop.last %}; {% endif %}{% endfor %}; zero baseline." style="margin:0 0 16px;padding:10px;background:{{ section_bg }};border-bottom:1px solid {{ rule_color }};font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
-                <p style="margin:0 0 5px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:14px;line-height:1.35;font-weight:600;color:{{ heading_color }};">{{ chart.title }} <span style="font-size:12px;line-height:1.35;font-weight:400;color:{{ secondary_color }};white-space:nowrap;">{{ chart.citations|safe }}</span></p>
+              <div class="earnings-chart" data-brand-surface="section" role="img" aria-label="{{ chart.title }}: {% for bar in chart.bars %}{{ bar.period }}: {{ bar.amount }}{% if not loop.last %}; {% endif %}{% endfor %}; zero baseline." style="margin:0 0 16px;padding:10px;background-color:{{ section_bg }};background:{{ section_bg }};color:{{ body_color }};border-bottom:1px solid {{ rule_color }};font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
+                <p style="margin:0 0 5px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:14px;line-height:1.35;font-weight:600;color:{{ body_color }};">{{ chart.title }} <span style="font-size:12px;line-height:1.35;font-weight:400;color:{{ secondary_color }};white-space:nowrap;">{{ chart.citations|safe }}</span></p>
                 {% if chart.reader_note %}
                 <p style="margin:0 0 8px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:14px;line-height:1.4;font-weight:400;color:{{ secondary_color }};">{{ chart.reader_note }}</p>
                 {% endif %}
@@ -124,15 +141,15 @@
                     {% set bar_height = ((source_value / chart_scale_max) * plot_height)|round(0, 'floor')|int %}
                     {% if bar.height > 0 and bar_height < 1 %}{% set bar_height = 1 %}{% endif %}
                     <td align="center" valign="top" style="padding:0 4px;text-align:center;vertical-align:top;">
-                      <p class="chart-value{% if bar.current %} current-chart-value{% endif %}" aria-label="{{ bar.period }}: {{ bar.amount }}" title="{{ bar.period }}: {{ bar.amount }}" style="margin:0 0 4px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:{% if bar.current %}22px{% else %}20px{% endif %};line-height:1.2;font-weight:{% if bar.current %}700{% else %}400{% endif %};font-variant-numeric:tabular-nums;color:{{ heading_color }};">{{ bar.amount }}</p>
+                      <p class="chart-value{% if bar.current %} current-chart-value{% endif %}" aria-label="{{ bar.period }}: {{ bar.amount }}" title="{{ bar.period }}: {{ bar.amount }}" style="margin:0 0 4px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:{% if bar.current %}22px{% else %}20px{% endif %};line-height:1.2;font-weight:{% if bar.current %}700{% else %}400{% endif %};font-variant-numeric:tabular-nums;color:{{ body_color }};">{{ bar.amount }}</p>
                       {% set signed_height = plot_height * 2 + 1 %}
                       <table role="presentation" width="44" height="{{ signed_height }}" cellpadding="0" cellspacing="0" style="width:44px;height:{{ signed_height }}px;margin:0 auto;border-collapse:collapse;">
                         <tr><td height="{{ plot_height }}" valign="bottom" style="height:{{ plot_height }}px;padding:0;vertical-align:bottom;line-height:0;">
-                          {% if not bar.negative and bar.height > 0 %}<table role="presentation" width="44" height="{{ bar_height }}" cellpadding="0" cellspacing="0" style="width:44px;height:{{ bar_height }}px;margin:0 auto;border-collapse:collapse;"><tr><td height="{{ bar_height }}" bgcolor="{% if bar.current %}{{ link_color }}{% else %}#cbd3db{% endif %}" style="height:{{ bar_height }}px;padding:0;background-color:{% if bar.current %}{{ link_color }}{% else %}#cbd3db{% endif %};line-height:0;">&nbsp;</td></tr></table>{% endif %}
+                          {% if not bar.negative and bar.height > 0 %}<table role="presentation" width="44" height="{{ bar_height }}" cellpadding="0" cellspacing="0" style="width:44px;height:{{ bar_height }}px;margin:0 auto;border-collapse:collapse;"><tr><td height="{{ bar_height }}" bgcolor="{% if bar.current %}{{ current_bar_color }}{% else %}{{ prior_bar_color }}{% endif %}" style="height:{{ bar_height }}px;padding:0;background-color:{% if bar.current %}{{ current_bar_color }}{% else %}{{ prior_bar_color }}{% endif %};background:{% if bar.current %}{{ current_bar_color }}{% else %}{{ prior_bar_color }}{% endif %};line-height:0;">&nbsp;</td></tr></table>{% endif %}
                         </td></tr>
-                        <tr><td height="1" style="height:1px;padding:0;background:{{ rule_color }};line-height:0;font-size:1px;">&nbsp;</td></tr>
+                        <tr><td height="1" bgcolor="{{ zero_color }}" style="height:1px;padding:0;background-color:{{ zero_color }};background:{{ zero_color }};line-height:0;font-size:1px;">&nbsp;</td></tr>
                         <tr><td height="{{ plot_height }}" valign="top" style="height:{{ plot_height }}px;padding:0;vertical-align:top;line-height:0;">
-                          {% if bar.negative and bar.height > 0 %}<table role="presentation" width="44" height="{{ bar_height }}" cellpadding="0" cellspacing="0" style="width:44px;height:{{ bar_height }}px;margin:0 auto;border-collapse:collapse;"><tr><td height="{{ bar_height }}" bgcolor="{% if bar.current %}{{ link_color }}{% else %}#cbd3db{% endif %}" style="height:{{ bar_height }}px;padding:0;background-color:{% if bar.current %}{{ link_color }}{% else %}#cbd3db{% endif %};line-height:0;">&nbsp;</td></tr></table>{% endif %}
+                          {% if bar.negative and bar.height > 0 %}<table role="presentation" width="44" height="{{ bar_height }}" cellpadding="0" cellspacing="0" style="width:44px;height:{{ bar_height }}px;margin:0 auto;border-collapse:collapse;"><tr><td height="{{ bar_height }}" bgcolor="{% if bar.current %}{{ current_bar_color }}{% else %}{{ prior_bar_color }}{% endif %}" style="height:{{ bar_height }}px;padding:0;background-color:{% if bar.current %}{{ current_bar_color }}{% else %}{{ prior_bar_color }}{% endif %};background:{% if bar.current %}{{ current_bar_color }}{% else %}{{ prior_bar_color }}{% endif %};line-height:0;">&nbsp;</td></tr></table>{% endif %}
                         </td></tr>
                       </table>
                       <p class="chart-axis" style="margin:6px 0 0;padding:0 2px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:13px;line-height:1.3;font-weight:{% if bar.current %}700{% else %}400{% endif %};color:{{ secondary_color }};">{{ bar.period }}</p>
@@ -147,11 +164,11 @@
                     {% set source_value = bar.raw_value|default(bar.height, true)|float|abs %}
                     {% set bar_height = ((source_value / chart_scale_max) * plot_height)|round(0, 'floor')|int %}
                     {% if bar.height > 0 and bar_height < 1 %}{% set bar_height = 1 %}{% endif %}
-                    <td align="center" valign="bottom" height="124" style="height:124px;padding:0 4px;text-align:center;vertical-align:bottom;border-bottom:1px solid {{ rule_color }};">
-                      <p class="chart-value{% if bar.current %} current-chart-value{% endif %}" aria-label="{{ bar.period }}: {{ bar.amount }}" title="{{ bar.period }}: {{ bar.amount }}" style="margin:0 0 4px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:{% if bar.current %}22px{% else %}20px{% endif %};line-height:1.2;font-weight:{% if bar.current %}700{% else %}400{% endif %};font-variant-numeric:tabular-nums;color:{{ heading_color }};">{{ bar.amount }}</p>
+                    <td align="center" valign="bottom" height="124" style="height:124px;padding:0 4px;text-align:center;vertical-align:bottom;border-bottom:1px solid {{ zero_color }};">
+                      <p class="chart-value{% if bar.current %} current-chart-value{% endif %}" aria-label="{{ bar.period }}: {{ bar.amount }}" title="{{ bar.period }}: {{ bar.amount }}" style="margin:0 0 4px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:{% if bar.current %}22px{% else %}20px{% endif %};line-height:1.2;font-weight:{% if bar.current %}700{% else %}400{% endif %};font-variant-numeric:tabular-nums;color:{{ body_color }};">{{ bar.amount }}</p>
                       {% if bar.height > 0 %}
                       <table role="presentation" class="chart-bar-table" width="44" height="{{ bar_height }}" cellpadding="0" cellspacing="0" style="display:inline-table;width:44px;height:{{ bar_height }}px;margin:0 auto;border-collapse:collapse;">
-                        <tr><td height="{{ bar_height }}" bgcolor="{% if bar.current %}{{ link_color }}{% else %}#cbd3db{% endif %}" style="height:{{ bar_height }}px;padding:0;background-color:{% if bar.current %}{{ link_color }}{% else %}#cbd3db{% endif %};line-height:0;">&nbsp;</td></tr>
+                        <tr><td height="{{ bar_height }}" bgcolor="{% if bar.current %}{{ current_bar_color }}{% else %}{{ prior_bar_color }}{% endif %}" style="height:{{ bar_height }}px;padding:0;background-color:{% if bar.current %}{{ current_bar_color }}{% else %}{{ prior_bar_color }}{% endif %};background:{% if bar.current %}{{ current_bar_color }}{% else %}{{ prior_bar_color }}{% endif %};line-height:0;">&nbsp;</td></tr>
                       </table>
                       {% endif %}
                     </td>
@@ -171,8 +188,9 @@
               {% endif %}
 
               {% if rows %}
-              <h2 class="brief-section-title" style="margin:24px 0 10px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:18px;line-height:1.35;font-weight:600;color:{{ heading_color }};">Reported figures <span style="font-size:12px;line-height:1.3;font-weight:400;color:{{ secondary_color }};white-space:nowrap;">{{ table_citations|safe }}</span></h2>
-              <table class="financial-table figures" data-brand-surface="section" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;table-layout:auto;background:{{ section_bg }};font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:14px;line-height:1.35;color:{{ heading_color }};">
+              <h2 class="brief-section-title" style="margin:24px 0 10px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:18px;line-height:1.35;font-weight:600;color:{{ body_color }};">Reported figures <span style="font-size:12px;line-height:1.3;font-weight:400;color:{{ secondary_color }};white-space:nowrap;">{{ table_citations|safe }}</span></h2>
+              <table class="financial-table figures" data-brand-surface="section" width="100%" cellspacing="0" cellpadding="0" bgcolor="{{ section_bg }}" style="width:100%;border-collapse:collapse;table-layout:auto;background-color:{{ section_bg }};background:{{ section_bg }};font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:14px;line-height:1.35;color:{{ body_color }};">
+                <colgroup><col class="metric-col" style="width:48%;"><col class="value-col" style="width:17.33%;"><col class="value-col" style="width:17.33%;"><col class="value-col" style="width:17.34%;"></colgroup>
                 <thead>
                   <tr>
                     <th scope="col" style="padding:8px 6px 9px 8px;text-align:left;font-size:12px;font-weight:600;border-bottom:1px solid {{ rule_color }};color:{{ secondary_color }};">Measure</th>
@@ -183,11 +201,11 @@
                 </thead>
                 <tbody>
                   {% for row in rows %}
-                  <tr{% if row.highlight == "green" %} style="background-color:#eaf2ed;color:#28513a;"{% elif row.highlight == "red" %} style="background-color:#faeceb;color:#8b3f37;"{% endif %}>
-                    <td class="metric-label" style="padding:10px 6px 10px 8px;text-align:left;border-bottom:1px solid {{ rule_color }};font-size:14px;">{{ row.label }} <span style="font-size:12px;line-height:1.3;white-space:nowrap;">{{ row.citations|safe }}</span></td>
+                  <tr data-metric-index="{{ row.metric_index }}"{% if row.highlight == "green" %} bgcolor="{{ positive_bg }}" style="background-color:{{ positive_bg }};background:{{ positive_bg }};color:{{ positive_color }};"{% elif row.highlight == "red" %} bgcolor="{{ negative_bg }}" style="background-color:{{ negative_bg }};background:{{ negative_bg }};color:{{ negative_color }};"{% endif %}>
+                    <td class="metric-label" style="padding:10px 6px 10px 8px;text-align:left;border-bottom:1px solid {{ rule_color }};font-size:14px;color:{{ body_color }};">{{ row.label }} <span style="font-size:12px;line-height:1.3;white-space:nowrap;">{{ row.citations|safe }}</span></td>
                     <td class="previous-value" style="padding:10px 5px;text-align:right;white-space:nowrap;border-bottom:1px solid {{ rule_color }};color:{{ secondary_color }};font-size:14px;font-variant-numeric:tabular-nums;">{{ row.yoy }}</td>
                     <td class="previous-value" style="padding:10px 5px;text-align:right;white-space:nowrap;border-bottom:1px solid {{ rule_color }};color:{{ secondary_color }};font-size:14px;font-variant-numeric:tabular-nums;">{{ row.qoq }}</td>
-                    <td class="current-value" style="padding:10px 8px 10px 5px;text-align:right;white-space:nowrap;border-bottom:1px solid {{ rule_color }};font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;color:{% if row.highlight == "green" %}#28513a{% elif row.highlight == "red" %}#8b3f37{% else %}{{ heading_color }}{% endif %};">{{ row.current }}</td>
+                    <td class="current-value" style="padding:10px 8px 10px 5px;text-align:right;white-space:nowrap;border-bottom:1px solid {{ rule_color }};font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;color:{% if row.highlight == "green" %}{{ positive_color }}{% elif row.highlight == "red" %}{{ negative_color }}{% else %}{{ body_color }}{% endif %};">{{ row.current }}</td>
                   </tr>
                   {% endfor %}
                 </tbody>
@@ -205,37 +223,48 @@
               {% endif %}
 
               {% if reviewed_context %}
-              <h2 class="brief-section-title" style="margin:24px 0 10px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:18px;line-height:1.35;font-weight:600;color:{{ heading_color }};">{{ context_heading|default('Portfolio and risk', true) }}</h2>
+              <h2 class="brief-section-title" style="margin:24px 0 10px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:18px;line-height:1.35;font-weight:600;color:{{ body_color }};">{{ context_heading|default('Portfolio and risk', true) }}</h2>
               {% for item in reviewed_context %}
               {% set context_text = item.text|default('', true) %}
               {% set context_words = context_text.rsplit(' ', 1) %}
-              <p class="body-copy" style="margin:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:{{ heading_color }};"><strong style="font-weight:600;">{{ item.title }}.</strong>{% if item.sources and context_words|length > 1 %} {{ context_words[0] }} <span class="citation-tail" style="white-space:nowrap;">{{ context_words[1] }}{% for proof in item.sources %} <a href="{{ proof.source_url }}" title="{{ proof.location }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.3;color:{{ link_color }};text-decoration:underline;">[{{ proof.number }}]</a>{% endfor %}</span>{% elif item.sources %} <span class="citation-tail" style="white-space:nowrap;">{{ context_text }}{% for proof in item.sources %} <a href="{{ proof.source_url }}" title="{{ proof.location }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.3;color:{{ link_color }};text-decoration:underline;">[{{ proof.number }}]</a>{% endfor %}</span>{% else %} {{ context_text }}{% endif %}</p>
+              <p class="body-copy" style="margin:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:{{ body_color }};"><strong style="font-weight:600;">{{ item.title }}.</strong>{% if item.sources and context_words|length > 1 %} {{ context_words[0] }} <span class="citation-tail" style="white-space:nowrap;">{{ context_words[1] }}{% for proof in item.sources %} <a href="{{ proof.source_url }}" title="{{ proof.location }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.3;color:{{ link_color }};text-decoration:underline;">[{{ proof.number }}]</a>{% endfor %}</span>{% elif item.sources %} <span class="citation-tail" style="white-space:nowrap;">{{ context_text }}{% for proof in item.sources %} <a href="{{ proof.source_url }}" title="{{ proof.location }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.3;color:{{ link_color }};text-decoration:underline;">[{{ proof.number }}]</a>{% endfor %}</span>{% else %} {{ context_text }}{% endif %}</p>
               {% endfor %}
               {% endif %}
 
               {% if selected_excerpts %}
-              <h2 class="brief-section-title" style="margin:24px 0 10px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:18px;line-height:1.35;font-weight:600;color:{{ heading_color }};">Source context</h2>
+              <h2 class="brief-section-title" style="margin:24px 0 10px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:18px;line-height:1.35;font-weight:600;color:{{ body_color }};">Source context</h2>
               {% for item in selected_excerpts %}
-              <p class="body-copy" style="margin:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:{{ heading_color }};">&ldquo;{{ item.text }}&rdquo; <a href="{{ item.url }}" title="{{ item.location }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.3;color:{{ link_color }};text-decoration:underline;">[{{ item.number }}]</a></p>
+              <p class="body-copy" style="margin:0 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:{{ body_color }};">&ldquo;{{ item.text }}&rdquo; <a href="{{ item.url }}" title="{{ item.location }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.3;color:{{ link_color }};text-decoration:underline;">[{{ item.number }}]</a></p>
               {% endfor %}
               {% endif %}
 
               {% if questions %}
-              <h2 style="margin:28px 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:18px;line-height:1.35;font-weight:600;color:{{ heading_color }};">Investor questions</h2>
+              <h2 style="margin:28px 0 12px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:18px;line-height:1.35;font-weight:600;color:{{ body_color }};">Questions</h2>
               <ol style="margin:0;padding:0 0 0 21px;">
                 {% for question in questions %}
-                <li class="body-copy" style="margin:0 0 8px;padding-left:3px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:{{ heading_color }};">{{ question }}</li>
+                <li class="body-copy" style="margin:0 0 8px;padding-left:3px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:{{ body_color }};">{{ question }}</li>
                 {% endfor %}
               </ol>
               {% endif %}
 
-              <h2 style="margin:28px 0 12px;padding-top:18px;border-top:1px solid {{ rule_color }};font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:18px;line-height:1.35;font-weight:600;color:{{ heading_color }};">Sources</h2>
+              {% if ai_analysis %}
+              <section aria-labelledby="ai-analysis-heading" style="margin:28px 0 0;padding-top:18px;border-top:2px solid {{ rule_color }};color:{{ body_color }};">
+                <h2 id="ai-analysis-heading" style="margin:0 0 16px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:20px;line-height:1.35;font-weight:600;color:{{ body_color }};">AI Analysis</h2>
+                {% for item in ai_analysis %}
+                {% if item.title %}<h3 style="margin:20px 0 8px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:17px;line-height:1.4;font-weight:600;color:{{ body_color }};">{{ item.title }}</h3>{% endif %}
+                {% set analysis_words = item.text.rsplit(' ', 1) %}
+                <p class="body-copy" style="margin:0 0 16px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.65;color:{{ body_color }};">{% if analysis_words|length > 1 %}{{ analysis_words[0] }} {% endif %}<span class="citation-tail" style="white-space:nowrap;">{{ analysis_words[-1] }}{% for proof in item.sources %} <a href="{{ proof.source_url }}" title="{{ proof.location }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.3;color:{{ link_color }};text-decoration:underline;">[{{ proof.number }}]</a>{% endfor %}</span></p>
+                {% endfor %}
+              </section>
+              {% endif %}
+
+              <h2 style="margin:28px 0 12px;padding-top:18px;border-top:1px solid {{ rule_color }};font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:18px;line-height:1.35;font-weight:600;color:{{ body_color }};">Sources</h2>
               {% for source in sources %}
-              <p style="margin:0 0 10px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;color:{{ heading_color }};"><a href="{{ source.url }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:13px;color:{{ link_color }};text-decoration:underline;">[{{ source.number }}] {{ source.name }}</a><br><span style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.35;color:{{ secondary_color }};">{% if source.date %}{{ source.date }}{% endif %}</span></p>
+              <p style="margin:0 0 10px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;color:{{ body_color }};"><a href="{{ source.url }}" style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:13px;color:{{ link_color }};text-decoration:underline;">[{{ source.number }}] {{ source.name }}</a><br><span style="font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.35;color:{{ secondary_color }};">{% if source.date %}{{ source.date }}{% endif %}</span></p>
               {% endfor %}
 
               {% if issues %}
-              <h3 style="margin:19px 0 7px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.4;font-weight:600;color:{{ heading_color }};">Coverage notes</h3>
+              <h3 style="margin:19px 0 7px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.4;font-weight:600;color:{{ body_color }};">Coverage notes</h3>
               {% for issue in issues %}
               <p style="margin:0 0 6px;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:{{ secondary_color }};">{{ issue }}</p>
               {% endfor %}

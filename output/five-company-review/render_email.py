@@ -19,7 +19,7 @@ from jinja2 import Environment, FileSystemLoader
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from servicing_brief.reader_content import assert_reader_content
-from servicing_brief.branding import brand_view, validate_page_theme
+from servicing_brief.branding import apply_page_theme, brand_view, validate_page_theme
 from servicing_brief.company_boundary import canonical_event, normalize_cik
 
 
@@ -775,6 +775,9 @@ def _review(raw: Any, ticker: str, prefix: bool, overlay: Mapping[str, Any] | No
     call_text = " ".join(item["text"] for item in call_findings)
     call_refs = list(dict.fromkeys(ref for item in call_findings for ref in item["source_ids"]))
     implications = editorial_items(overlay.get("implications", []), "implications")
+    ai_analysis = editorial_items(overlay.get("ai_analysis", []), "AI Analysis")
+    if any(not item["text"] or not item["source_ids"] for item in ai_analysis):
+        raise ValueError(f"{ticker}: AI Analysis requires original text and supporting sources")
     call_availability = _financial_display(call_obj.get("availability", ""))
     if call_availability:
         call_availability_refs = _references(call_obj.get("availability_sources", call_obj.get("sources", [])), f"{ticker} call availability", raw_to_display)
@@ -801,6 +804,8 @@ def _review(raw: Any, ticker: str, prefix: bool, overlay: Mapping[str, Any] | No
         used_refs.update(insight["source_ids"])
     for item in implications:
         used_refs.update(item["source_ids"])
+    for item in ai_analysis:
+        used_refs.update(item["source_ids"])
     if chart:
         used_refs.update(chart["source_ids"])
     excluded_ids = set()
@@ -815,7 +820,7 @@ def _review(raw: Any, ticker: str, prefix: bool, overlay: Mapping[str, Any] | No
             raise ValueError(f"{ticker}: excluded source {source_id} still supports visible content")
         excluded_ids.add(source_id)
     sources = [source for source in sources if source["id"] not in excluded_ids]
-    if brief_kind == 'coverage_note' and (chart or groups or insights or call_text or implications or question):
+    if brief_kind == 'coverage_note' and (chart or groups or insights or call_text or implications or ai_analysis or question):
         raise ValueError(f'{ticker}: a coverage note cannot carry charts, metrics, insights, calls or investor questions')
     return {
         "brief_kind": brief_kind,
@@ -840,6 +845,7 @@ def _review(raw: Any, ticker: str, prefix: bool, overlay: Mapping[str, Any] | No
         "servicing_context": {"text": context_text, "source_ids": context_refs},
         "call": {"text": call_text, "findings": call_findings, "source_ids": call_refs, "availability": call_availability, "availability_source_ids": call_availability_refs},
         "implications": implications,
+        "ai_analysis": ai_analysis,
         "question": question,
         "sources": sources,
         "excluded_sources": excluded_sources,
@@ -910,7 +916,13 @@ def _render_text(companies: list[dict[str, Any]], *, combined: bool, universe_no
         for item in company["implications"]:
             lines.extend(["", "Analyst interpretation" + (": " + item["label"] if item["label"] else ""), item["text"] + _refs_text(item["source_ids"], labels)])
         if company["question"]:
-            lines.extend(["", "Investor question", company["question"]])
+            lines.extend(["", "Questions", company["question"]])
+        if company.get("ai_analysis"):
+            lines.extend(["", "AI Analysis"])
+            for item in company["ai_analysis"]:
+                if item["label"]:
+                    lines.extend(["", item["label"]])
+                lines.append(item["text"] + _refs_text(item["source_ids"], labels))
         lines.extend(["", "Sources"])
         if company["call"]["availability"]:
             lines.append("Call availability: " + company["call"]["availability"] + _refs_text(company["call"]["availability_source_ids"], labels))
@@ -970,6 +982,8 @@ def _render_html(env: Environment, companies: list[dict[str, Any]], *, combined:
     )
     rendered = re.sub(r">\s+<", "><", rendered).strip()
     rendered = _compact_rendered(rendered)
+    if not combined:
+        rendered = apply_page_theme(rendered, companies[0]['brand']['theme'])
     assert_reader_content(rendered, '')
     if full_document and not combined:
         validate_page_theme(rendered, companies[0]['ticker'])

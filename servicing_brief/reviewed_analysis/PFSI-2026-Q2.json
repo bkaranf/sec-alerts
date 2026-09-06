@@ -1,0 +1,409 @@
+{
+  "version": 1,
+  "ticker": "PFSI",
+  "cik": "0001745916",
+  "report_period": "2026-Q2",
+  "title": "AI Analysis",
+  "author": "AI",
+  "writing_guide": "PUBLIC_VOICE.md",
+  "writing_guide_sha256_at_authoring": "0669762f49506f57620110fd6c7c5ef6e7867ace9c3049d7c07a1a0da928eda5",
+  "original_analysis": true,
+  "section_position": "after Questions, before Sources",
+  "sections": [
+    {
+      "id": "growth_economics",
+      "title": "",
+      "text": "The source of PennyMac's earnings recovery matters more than portfolio growth alone. Management tied stronger revenue before valuation-related items to slower prepayments and higher custodial balances, while higher average MSR financing balances pushed up expense. The revenue benefit does not itself prove that each loan has become cheaper to service. The operating test is how much additional profit remains after funding the servicing assets and doing the work for borrowers. Q2 strengthens the earnings case; the unit-cost case still needs evidence.",
+      "sources": [
+        {
+          "number": 1,
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-1.htm",
+          "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_release_0001104659-26-088174_cca51031e1aa3570.htm",
+          "location": "Earnings release, Servicing Segment Highlights and CEO opening commentary; Business Highlights, expected Cenlar closing",
+          "archive_sha256": "cca51031e1aa3570fb48e9ef84124009dc533eb1ffc44c599529490d6b08183f"
+        }
+      ],
+      "support": [
+        {
+          "kind": "management_explanation",
+          "claim": "Revenue improved with slower prepayments and higher custodial balances; expenses increased primarily with higher MSR financing balances.",
+          "source_numbers": [
+            1
+          ],
+          "basis": "Release servicing revenue and expense explanations compare Q2 2026 with Q1 2026.",
+          "qualification": "These are attributed explanations, not independently estimated causal contributions."
+        },
+        {
+          "kind": "analytical_inference",
+          "claim": "The reported recovery does not establish lower operating cost per loan.",
+          "source_numbers": [
+            1
+          ],
+          "basis": "The disclosed explanations concern prepayments, custodial earnings and financing. No unit-cost measure in these cited results isolates processing efficiency.",
+          "qualification": "This does not assert that unit costs rose or that efficiency gains did not occur."
+        },
+        {
+          "kind": "analytical_inference",
+          "claim": "Assess incremental profit after funding and borrower-servicing work.",
+          "source_numbers": [
+            1
+          ],
+          "basis": "The release reports servicing revenue, expense and income separately and identifies financing as an expense driver.",
+          "qualification": "An assessment criterion, not a new profit forecast."
+        }
+      ]
+    },
+    {
+      "id": "profit_reconciliation",
+      "title": "Keep profit and cash distinct",
+      "text": "The two profit measures show why that distinction matters. Using the issuer's rounded figures, pretax income before valuation-related items improved by $42m from Q1. Valuation-related losses widened from ($44m) to ($77m), absorbing most of that gain and leaving a $9m improvement in reported servicing pretax income. This is an income reconciliation, not a cash-flow bridge. The $99m prevaluation result reveals a stronger quarter before the specified valuation effects; the $22m reported result keeps the MSR and hedging exposure in view. That exposure belongs in the assessment of returns from owning servicing rights.",
+      "sources": [
+        {
+          "number": 1,
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-1.htm",
+          "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_release_0001104659-26-088174_cca51031e1aa3570.htm",
+          "location": "Earnings release, Servicing Segment Highlights and CEO opening commentary; Business Highlights, expected Cenlar closing",
+          "archive_sha256": "cca51031e1aa3570fb48e9ef84124009dc533eb1ffc44c599529490d6b08183f"
+        }
+      ],
+      "support": [
+        {
+          "kind": "reported_fact",
+          "claim": "Prevaluation pretax income was $99m in Q2 versus $57m in Q1; valuation-related losses were ($77m) versus ($44m); reported pretax income was $22m versus $13m.",
+          "source_numbers": [
+            1
+          ],
+          "basis": "Release Servicing Segment Highlights table and paragraphs.",
+          "qualification": "All amounts are issuer-rounded millions for the same servicing segment and adjacent quarters."
+        },
+        {
+          "kind": "calculation",
+          "claim": "Prevaluation income improved by $42m and reported pretax income by $9m.",
+          "source_numbers": [
+            1
+          ],
+          "basis": "Decimal arithmetic using compatible issuer-rounded servicing figures.",
+          "inputs": {
+            "q2_prevaluation_m": "99",
+            "q1_prevaluation_m": "57",
+            "q2_valuation_m": "-77",
+            "q1_valuation_m": "-44",
+            "q2_reported_m": "22",
+            "q1_reported_m": "13"
+          },
+          "formulas": [
+            "99 - 57 = 42",
+            "(-77) - (-44) = -33",
+            "22 - 13 = 9",
+            "42 + (-33) = 9"
+          ],
+          "qualification": "Reconciliation of rounded reported income, not a cash-flow bridge or attribution of all operating causes."
+        },
+        {
+          "kind": "analytical_inference",
+          "claim": "Valuation and hedging exposure should remain in an assessment of owned-servicing returns.",
+          "source_numbers": [
+            1
+          ],
+          "basis": "The difference between the issuer prevaluation and reported servicing results consists of the disclosed valuation-related items.",
+          "qualification": "The paragraph does not equate all valuation changes with cash hedge payments."
+        }
+      ]
+    },
+    {
+      "id": "realization_and_cash",
+      "title": "",
+      "text": "The prevaluation figure also requires care. The 10-Q separates changes in MSR fair value caused by cash-flow realization from changes caused by market inputs. PennyMac's prevaluation measure still includes the cash-flow-realization component and financing expense. Slower prepayments helped this quarter through lower MSR cash-flow realization; that accounting benefit is not a statement that an equal amount of extra cash arrived. An assessment of cash returns needs the actual receipts, financing payments, advances and recoveries. Substituting prevaluation income for cash flow would conceal those differences.",
+      "sources": [
+        {
+          "number": 1,
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-1.htm",
+          "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_release_0001104659-26-088174_cca51031e1aa3570.htm",
+          "location": "Earnings release, Servicing Segment Highlights and CEO opening commentary; Business Highlights, expected Cenlar closing",
+          "archive_sha256": "cca51031e1aa3570fb48e9ef84124009dc533eb1ffc44c599529490d6b08183f"
+        },
+        {
+          "number": 3,
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
+          "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_10-Q_0001104659-26-090486_9b0062e5c2d62e2a.htm",
+          "location": "10-Q: Note 1, printed p.11; servicing-advance accounting, printed pp.20-21; MSR fair-value discussion, printed p.69; MD&A Expenses, Servicing; Liquidity and Capital Resources, printed p.75",
+          "archive_sha256": "9b0062e5c2d62e2abe50a89a5b6f606140d6eaee6e3ef27ee824529292642155"
+        }
+      ],
+      "support": [
+        {
+          "kind": "reported_fact",
+          "claim": "MSR fair-value movements have cash-flow-realization and market-input components.",
+          "source_numbers": [
+            3
+          ],
+          "basis": "10-Q printed p.69: paragraph beginning We have elected to carry our servicing assets and liabilities at fair value.",
+          "qualification": "Cash-flow realization is part of the fair-value accounting description, not a cash balance."
+        },
+        {
+          "kind": "reported_fact",
+          "claim": "The issuer prevaluation income measure retains cash-flow realization and financing expense.",
+          "source_numbers": [
+            1,
+            3
+          ],
+          "basis": "Release servicing segment table separates valuation-related items from pretax income excluding them; the 10-Q explains the MSR realization component.",
+          "qualification": "The measure is issuer-defined and non-GAAP."
+        },
+        {
+          "kind": "analytical_inference",
+          "claim": "A favorable realization effect cannot be equated with an equal increase in collected cash.",
+          "source_numbers": [
+            1,
+            3
+          ],
+          "basis": "The reported mechanism is an accounting component of servicing revenue, while cash collection, funding and recovery are different flows.",
+          "qualification": "No cash-flow amount or forecast is inferred."
+        }
+      ]
+    },
+    {
+      "id": "arrears_and_workload",
+      "title": "What the arrears rate leaves out",
+      "text": "A lower delinquency rate can coexist with higher servicing expense. The presentation's 60+ day rate for the owned portfolio eased from 4.2% in Q1 to 4.1%, measured by loan count. The 10-Q's expense comparison is year over year and points to larger delinquent balances, a larger portfolio and a greater proportion of delinquencies of 90 days or more. The different periods and measures prevent a simple conclusion that credit-related servicing work became easier. For operating oversight, the useful follow-through is how long troubled loans remain unresolved, which advances are recovered and what it costs to carry them.",
+      "sources": [
+        {
+          "number": 2,
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-2.htm",
+          "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_presentation_0001104659-26-088174_6414e887fe4f318d.htm",
+          "location": "Presentation slide 13, Selected Operational Metrics and footnote 2; slide 16, Strong Balance Sheet and Diverse Capital Structures",
+          "archive_sha256": "6414e887fe4f318d4480a23739a06ca24e746d07fd386c0f523d005d728a6524"
+        },
+        {
+          "number": 3,
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
+          "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_10-Q_0001104659-26-090486_9b0062e5c2d62e2a.htm",
+          "location": "10-Q: Note 1, printed p.11; servicing-advance accounting, printed pp.20-21; MSR fair-value discussion, printed p.69; MD&A Expenses, Servicing; Liquidity and Capital Resources, printed p.75",
+          "archive_sha256": "9b0062e5c2d62e2abe50a89a5b6f606140d6eaee6e3ef27ee824529292642155"
+        }
+      ],
+      "support": [
+        {
+          "kind": "reported_fact",
+          "claim": "Owned-portfolio 60+ day delinquency was 4.1% in Q2 versus 4.2% in Q1, by loan count.",
+          "source_numbers": [
+            2
+          ],
+          "basis": "Slide 13 Selected Operational Metrics, footnote 2.",
+          "qualification": "Owned portfolio; a count-based delinquency rate, not a servicing margin or a balance-weighted rate."
+        },
+        {
+          "kind": "management_explanation",
+          "claim": "Year-over-year servicing expense pressure was attributed primarily to advance-loss provisions associated with larger delinquent balances, a larger portfolio and a larger proportion of delinquencies of 90 days or more.",
+          "source_numbers": [
+            3
+          ],
+          "basis": "MD&A Expenses, Servicing, paragraph beginning Servicing expenses increased $14.2 million and $30.6 million.",
+          "qualification": "The public paragraph does not state that $14.2m is the provision amount or compare the expense change with Q1."
+        },
+        {
+          "kind": "analytical_inference",
+          "claim": "The count-based adjacent-quarter rate and year-over-year expense explanation cannot establish that servicing credit workload became easier.",
+          "source_numbers": [
+            2,
+            3
+          ],
+          "basis": "They use different comparison periods and measures.",
+          "qualification": "No numerical causal link is inferred; advances and servicing work require separate evaluation."
+        },
+        {
+          "kind": "analytical_inference",
+          "claim": "Resolution time, advance recoverability and carrying cost are useful oversight measures.",
+          "source_numbers": [
+            3
+          ],
+          "basis": "Servicing advances have recoverability allowances and may be funded through secured facilities.",
+          "qualification": "These are proposed assessment measures, not additional disclosed results."
+        }
+      ]
+    },
+    {
+      "id": "liquidity_timing",
+      "title": "",
+      "text": "Cash timing makes those recovery questions important. PennyMac is contractually responsible for certain payments that protect investors' interests in the underlying properties, and the 10-Q says some advances can exceed insurer or guarantor reimbursement limits. An advance-loss provision is an estimate about recoverability; it does not describe the timing of every cash payment or recovery. Meanwhile, margin calls generally require payment the same day or within one business day. The reported $4.0bn of companywide liquidity includes capacity against pledged collateral. Assessing resilience therefore requires both sufficient total liquidity and cash available when obligations fall due. These disclosures do not quantify a funding shortfall.",
+      "sources": [
+        {
+          "number": 2,
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-2.htm",
+          "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_presentation_0001104659-26-088174_6414e887fe4f318d.htm",
+          "location": "Presentation slide 13, Selected Operational Metrics and footnote 2; slide 16, Strong Balance Sheet and Diverse Capital Structures",
+          "archive_sha256": "6414e887fe4f318d4480a23739a06ca24e746d07fd386c0f523d005d728a6524"
+        },
+        {
+          "number": 3,
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
+          "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_10-Q_0001104659-26-090486_9b0062e5c2d62e2a.htm",
+          "location": "10-Q: Note 1, printed p.11; servicing-advance accounting, printed pp.20-21; MSR fair-value discussion, printed p.69; MD&A Expenses, Servicing; Liquidity and Capital Resources, printed p.75",
+          "archive_sha256": "9b0062e5c2d62e2abe50a89a5b6f606140d6eaee6e3ef27ee824529292642155"
+        }
+      ],
+      "support": [
+        {
+          "kind": "reported_fact",
+          "claim": "Certain property-protection payments are contractual and advances may exceed insurer or guarantor reimbursement limits.",
+          "source_numbers": [
+            3
+          ],
+          "basis": "10-Q printed p.20, servicing-advance accounting.",
+          "qualification": "Preserves may and certain; does not generalize that every advance exceeds limits."
+        },
+        {
+          "kind": "reported_fact",
+          "claim": "The advance allowance estimates recoverable amounts and losses are expensed; unrecoverable advances are written off.",
+          "source_numbers": [
+            3
+          ],
+          "basis": "10-Q printed pp.20-21, servicing advances and allowance.",
+          "qualification": "Provision accounting is distinct from the timing of cash payments and collections."
+        },
+        {
+          "kind": "reported_fact",
+          "claim": "Margin calls are generally due on the notice day or within one business day; liquidity of $4.0bn includes cash and capacity with collateral pledged.",
+          "source_numbers": [
+            2,
+            3
+          ],
+          "basis": "10-Q printed p.75, Liquidity and Capital Resources; slide 16, Diverse Financing Sources.",
+          "qualification": "Liquidity is companywide and is not all cash or a servicing-only cash buffer."
+        },
+        {
+          "kind": "analytical_inference",
+          "claim": "Liquidity resilience depends on availability when obligations fall due as well as total capacity.",
+          "source_numbers": [
+            2,
+            3
+          ],
+          "basis": "Short margin-call timing and recovery uncertainty coexist with collateral-backed capacity.",
+          "qualification": "No funding shortfall, inability to pay or forecasted crisis is asserted."
+        }
+      ]
+    },
+    {
+      "id": "cenlar_scale",
+      "title": "Cenlar must prove the scale case",
+      "text": "Cenlar is where the scale argument becomes testable. In July's release, management expected the subservicing acquisition to close in the fourth quarter; the 10-Q kept closing conditional on approvals and other customary conditions. The business being acquired consists primarily of contracts to service loans for institutional clients. Management expects technology and scale to create operating leverage and sees fee-based revenue as part of its longer-term return-on-equity plan. The business logic is to earn additional fees without a proportionate increase in ongoing operating cost. That remains an analytical rationale supported by management's expectations, not a demonstrated cost saving from Q2.",
+      "sources": [
+        {
+          "number": 1,
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-1.htm",
+          "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_release_0001104659-26-088174_cca51031e1aa3570.htm",
+          "location": "Earnings release, Servicing Segment Highlights and CEO opening commentary; Business Highlights, expected Cenlar closing",
+          "archive_sha256": "cca51031e1aa3570fb48e9ef84124009dc533eb1ffc44c599529490d6b08183f"
+        },
+        {
+          "number": 3,
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
+          "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_10-Q_0001104659-26-090486_9b0062e5c2d62e2a.htm",
+          "location": "10-Q: Note 1, printed p.11; servicing-advance accounting, printed pp.20-21; MSR fair-value discussion, printed p.69; MD&A Expenses, Servicing; Liquidity and Capital Resources, printed p.75",
+          "archive_sha256": "9b0062e5c2d62e2abe50a89a5b6f606140d6eaee6e3ef27ee824529292642155"
+        }
+      ],
+      "support": [
+        {
+          "kind": "management_explanation",
+          "claim": "Management expected Q4 closing in the July release and operating leverage from technology and scale, with fee-based revenue supporting long-term ROE targets.",
+          "source_numbers": [
+            1
+          ],
+          "basis": "Release Business Highlights and opening CEO David Spector commentary.",
+          "qualification": "Management expectations at the release date, not realized results or a current assurance of closing."
+        },
+        {
+          "kind": "reported_fact",
+          "claim": "Cenlar subservicing business consists primarily of contracts for institutional clients and the transaction remained subject to regulatory approvals and customary conditions.",
+          "source_numbers": [
+            3
+          ],
+          "basis": "10-Q Note 1, printed p.11, February 11 agreement paragraph.",
+          "qualification": "The 10-Q says second-half 2026 and warns closing may not occur as expected or at all. The public paragraph attributes the narrower Q4 expectation to the July release."
+        },
+        {
+          "kind": "analytical_inference",
+          "claim": "Operating leverage would require fee growth without proportional ongoing cost growth.",
+          "source_numbers": [
+            1,
+            3
+          ],
+          "basis": "Analytical explanation of the stated technology-and-scale operating-leverage expectation.",
+          "qualification": "No realized savings, contribution margin, cost per loan or revenue forecast is invented."
+        }
+      ]
+    },
+    {
+      "id": "what_would_change_assessment",
+      "title": "",
+      "text": "The useful proof would come after closing and onboarding: how much fee revenue turns into contribution after transition costs, ongoing servicing expense and required service levels. That contribution should then be considered alongside MSR financing costs, advance recoveries and cash demands in the rest of the servicing business. Those measures would connect management's scale expectation to the profit and cash produced by the additional servicing relationships.",
+      "sources": [
+        {
+          "number": 1,
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-1.htm",
+          "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_release_0001104659-26-088174_cca51031e1aa3570.htm",
+          "location": "Earnings release, Servicing Segment Highlights and CEO opening commentary; Business Highlights, expected Cenlar closing",
+          "archive_sha256": "cca51031e1aa3570fb48e9ef84124009dc533eb1ffc44c599529490d6b08183f"
+        },
+        {
+          "number": 3,
+          "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
+          "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_10-Q_0001104659-26-090486_9b0062e5c2d62e2a.htm",
+          "location": "10-Q: Note 1, printed p.11; servicing-advance accounting, printed pp.20-21; MSR fair-value discussion, printed p.69; MD&A Expenses, Servicing; Liquidity and Capital Resources, printed p.75",
+          "archive_sha256": "9b0062e5c2d62e2abe50a89a5b6f606140d6eaee6e3ef27ee824529292642155"
+        }
+      ],
+      "support": [
+        {
+          "kind": "analytical_inference",
+          "claim": "Assess post-onboarding fee contribution after transition and servicing costs, together with financing and advance cash demands.",
+          "source_numbers": [
+            1,
+            3
+          ],
+          "basis": "Management links acquisition scale and fee-based revenue to long-term ROE; existing results separately disclose financing expense, advance-loss accounting and liquidity demands.",
+          "qualification": "A forward-looking evaluation framework with no numeric forecast or claim that the acquisition has closed."
+        }
+      ]
+    }
+  ],
+  "source_manifest": [
+    {
+      "number": 1,
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-1.htm",
+      "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_release_0001104659-26-088174_cca51031e1aa3570.htm",
+      "location": "Earnings release, Servicing Segment Highlights and CEO opening commentary; Business Highlights, expected Cenlar closing",
+      "archive_sha256": "cca51031e1aa3570fb48e9ef84124009dc533eb1ffc44c599529490d6b08183f"
+    },
+    {
+      "number": 2,
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926088174/tm2621541d1_ex99-2.htm",
+      "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_presentation_0001104659-26-088174_6414e887fe4f318d.htm",
+      "location": "Presentation slide 13, Selected Operational Metrics and footnote 2; slide 16, Strong Balance Sheet and Diverse Capital Structures",
+      "archive_sha256": "6414e887fe4f318d4480a23739a06ca24e746d07fd386c0f523d005d728a6524"
+    },
+    {
+      "number": 3,
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
+      "archive_path": "data/live-core-strict/archive/PFSI/2026-Q2/PFSI_2026-Q2_10-Q_0001104659-26-090486_9b0062e5c2d62e2a.htm",
+      "location": "10-Q: Note 1, printed p.11; servicing-advance accounting, printed pp.20-21; MSR fair-value discussion, printed p.69; MD&A Expenses, Servicing; Liquidity and Capital Resources, printed p.75",
+      "archive_sha256": "9b0062e5c2d62e2abe50a89a5b6f606140d6eaee6e3ef27ee824529292642155"
+    }
+  ],
+  "supporting_assets": [
+    {
+      "path": "C:\\Users\\bkara\\OneDrive\\Documents\\ChatGPT\\SEC Alerts\\data\\live-core-strict\\archive\\PFSI\\2026-Q2\\PFSI_2026-Q2_asset-tm2621541d1_ex99-2img013.jpg_0001104659-26-088174_dca7cd0f41420aa8.jpg",
+      "sha256": "dca7cd0f41420aa89b2fd2b1faa54731a1ffc926af81ec768e592bec4eb515b4"
+    },
+    {
+      "path": "C:\\Users\\bkara\\OneDrive\\Documents\\ChatGPT\\SEC Alerts\\data\\live-core-strict\\archive\\PFSI\\2026-Q2\\PFSI_2026-Q2_asset-tm2621541d1_ex99-2img016.jpg_0001104659-26-088174_133aca190fc528be.jpg",
+      "sha256": "133aca190fc528bee3289ff7d66058efecac547468f9a55a85f6cc3487ec386b"
+    }
+  ],
+  "call_context": {
+    "status": "unavailable",
+    "qualification": "No full call transcript was located in the available verified source set. CEO commentary used here is from the earnings release, not a claimed call transcript."
+  },
+  "internal_review_status": "Draft for independent factual review and actual-render acceptance; not send approval."
+}

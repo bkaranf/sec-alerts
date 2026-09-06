@@ -3,20 +3,27 @@
 {% set theme = brand.theme|default({}, true) %}
 {% set rule_color = theme.rule_color|default('#dce1e6', true) %}
 {% set paper_bg = theme.paper_bg|default('#fcfbf8', true) %}
-{% set heading_color = theme.heading_color|default('#171c22', true) %}
+{% set body_color = theme.body_color|default(theme.heading_color|default('#171c22', true), true) %}
 {% set secondary_color = theme.secondary_color|default('#606b75', true) %}
-<table role="presentation" class="issuer-masthead" data-brand-surface="paper" width="100%" cellpadding="0" cellspacing="0" style="width:100%;margin:4px 0 0;border-top:1px solid {{ rule_color }};background:{{ paper_bg }};font-family:'Segoe UI',Arial,Helvetica,sans-serif;color:{{ heading_color }};">
+{% set logo_bg = theme.logo_bg|default('#ffffff', true) %}
+<table role="presentation" class="issuer-masthead" data-brand-surface="paper" width="100%" cellpadding="0" cellspacing="0" bgcolor="{{ paper_bg }}" style="width:100%;margin:4px 0 0;border-top:1px solid {{ rule_color }};background-color:{{ paper_bg }};background:{{ paper_bg }};font-family:'Segoe UI',Arial,Helvetica,sans-serif;color:{{ body_color }};">
   <tr>
     {% if brand and brand.verified %}
     <td valign="middle" style="padding:10px 8px 8px 0;vertical-align:middle;font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
-      <p class="issuer-name" style="margin:0;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:22px;line-height:1.18;font-weight:600;letter-spacing:-0.2px;color:{{ heading_color }};">{{ name }}</p>
+      <p class="issuer-name" style="margin:0;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:22px;line-height:1.18;font-weight:600;letter-spacing:-0.2px;color:{{ body_color }};">{{ name }}</p>
     </td>
-    <td align="right" valign="middle" style="width:104px;padding:10px 0 8px 8px;text-align:right;vertical-align:middle;font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
-      <img data-brand-ticker="{{ ticker }}" data-brand-logo-description="{{ brand.logo_alt|default('', true) }}" src="{{ brand.logo_src }}" alt="" aria-hidden="true" width="{{ brand.width }}" height="{{ brand.height }}" style="display:block;width:auto;max-width:104px;height:auto;max-height:36px;margin:0 0 0 auto;border:0;">
+    <td align="right" valign="middle" bgcolor="{{ paper_bg }}" style="width:116px;padding:10px 0 8px 8px;text-align:right;vertical-align:middle;background-color:{{ paper_bg }};background:{{ paper_bg }};font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
+      <table role="presentation" align="right" cellpadding="6" cellspacing="0" bgcolor="{{ logo_bg }}" style="display:inline-table;border-collapse:collapse;background-color:{{ logo_bg }};background:{{ logo_bg }};">
+        <tr>
+          <td bgcolor="{{ logo_bg }}" style="padding:6px;background-color:{{ logo_bg }};background:{{ logo_bg }};font-size:0;line-height:0;">
+            <img data-brand-ticker="{{ ticker }}" data-brand-logo-description="{{ brand.logo_alt|default('', true) }}" src="{{ brand.logo_src }}" alt="" aria-hidden="true" width="{{ brand.width }}" height="{{ brand.height }}" style="display:block;width:auto;max-width:104px;height:auto;max-height:36px;margin:0 0 0 auto;border:0;">
+          </td>
+        </tr>
+      </table>
     </td>
     {% else %}
     <td colspan="2" valign="middle" style="padding:10px 0 8px;vertical-align:middle;font-family:'Segoe UI',Arial,Helvetica,sans-serif;">
-      <p class="issuer-name" style="margin:0;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:22px;line-height:1.18;font-weight:600;letter-spacing:-0.2px;color:{{ heading_color }};">{{ name }}</p>
+      <p class="issuer-name" style="margin:0;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:22px;line-height:1.18;font-weight:600;letter-spacing:-0.2px;color:{{ body_color }};">{{ name }}</p>
     </td>
     {% endif %}
   </tr>

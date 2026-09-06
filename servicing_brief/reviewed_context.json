@@ -3,8 +3,8 @@
   "entries": [
     {
       "id": "pfsi-q226-retention",
-      "title": "Prepayments and arrears",
-      "text": "Owned-portfolio prepayments slowed to 11.6% CPR from 13.7% in Q1. Separately, 60+ day delinquency declined to 4.1% from 4.2% by loan count in that portfolio.",
+      "title": "Prepayments and delinquency",
+      "text": "Owned-portfolio conditional prepayment rate (CPR) slowed to 11.6% from 13.7% in Q1. Separately, 60+ day delinquency eased to 4.1% from 4.2%, measured by loan count in that portfolio.",
       "sources": [
         {
           "content_hash": "6414e887fe4f318d4480a23739a06ca24e746d07fd386c0f523d005d728a6524",
@@ -165,7 +165,7 @@
     },
     {
       "id": "pfsi-q226-liquidity",
-      "title": "Cash and borrowing capacity",
+      "title": "Collateral-backed liquidity",
       "text": "PennyMac reported $4.0bn of companywide liquidity, including cash and borrowing capacity against pledged collateral. The 10-Q says margin calls generally must be met the same day or within one business day.",
       "sources": [
         {
@@ -181,7 +181,7 @@
           "content_hash": "9b0062e5c2d62e2abe50a89a5b6f606140d6eaee6e3ef27ee824529292642155",
           "period": "2026-Q2",
           "kind": "10-Q",
-          "location": "10-Q, Liquidity and Capital Resources, printed page 74; HTML text line 3161",
+          "location": "10-Q, Liquidity and Capital Resources, printed page 75; HTML text line 3161",
           "asset_hashes": []
         }
       ],
@@ -253,28 +253,28 @@
             "location": "10-Q HTML text line 3153, Liquidity and Capital Resources",
             "quote": "A significant amount of our borrowings have short-term maturities and provide for advances with terms ranging from 30 days to 364 days. Because a significant portion of our current debt facilities consist of short-term debt, we expect to renew these facilities in advance of maturity in order to ensure our ongoing liquidity and access to capital or otherwise allow ourselves sufficient time to replace any necessary financing.",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
-            "printed_page": "74"
+            "printed_page": "75"
           },
           {
             "document_id": "7569a73a88b446ddfaccc3de",
             "location": "10-Q HTML text line 3155, Liquidity and Capital Resources",
             "quote": "Secured debt facilities for MSRs and servicing advances take various forms. Fannie Mae MSRs, Ginnie Mae MSRs and servicing advances may be pledged to special purpose entities, each of which may issue variable funding notes (“VFNs”) and term notes and term loans that are secured by such Ginnie Mae or Fannie Mae assets.",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
-            "printed_page": "74"
+            "printed_page": "75"
           },
           {
             "document_id": "7569a73a88b446ddfaccc3de",
             "location": "10-Q HTML text line 3156, Liquidity and Capital Resources",
             "quote": "On May 27, 2026, the Company, through its wholly-owned subsidiaries PNMAC, PLS and the Issuer Trust, issued $300 million in Term Notes with a spread of 2.25% due in May 2031 and partially redeemed $300 million Term Notes in with a spread of 3.20% due in March 2029.",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
-            "printed_page": "74"
+            "printed_page": "75"
           },
           {
             "document_id": "7569a73a88b446ddfaccc3de",
             "location": "10-Q HTML text line 3161, Liquidity and Capital Resources",
             "quote": "Upon notice from the applicable lender, we will generally be required to satisfy the margin call on the day of such notice or within one business day thereafter, depending on the timing of the notice.",
             "source_url": "https://www.sec.gov/Archives/edgar/data/1745916/000110465926090486/pfsi-20260630x10q.htm",
-            "printed_page": "74"
+            "printed_page": "75"
           }
         ],
         "qualification": "The slide’s liquidity figure is a management-reported total with collateral and draw capacity. The 10-Q’s short-term maturity and margin-call language describes structural funding requirements; it does not state that a margin call occurred in Q2."
@@ -288,7 +288,7 @@
       "id": "pfsi-q226-annual-risk-context",
       "cik": "0001745916",
       "report_period": "2026-Q2",
-      "title": "Advance recovery (FY2025)",
+      "title": "Advance recovery, FY2025 context",
       "text": "Regulatory actions can increase servicing advances and delay reimbursement. The annual filing also describes allowances for advances not expected to be recovered from insurers, guarantors or beneficial-interest holders. This is continuing risk context, not a new problem reported this quarter.",
       "statement_type": "historical_structural_risk",
       "review_method": "Astra editorial selection; independent source review; exact annual text and source hash verified",
@@ -391,7 +391,7 @@
       "id": "pfsi-q226-advance-expense",
       "cik": "0001745916",
       "report_period": "2026-Q2",
-      "title": "Advance losses are an expense driver",
+      "title": "Servicing expense and advance-loss provisions",
       "text": "The 10-Q reports a $14.2m year-over-year increase in the servicing expense category for the quarter. Management attributes the increase primarily to loss provisions on servicing advances, reflecting larger delinquent loan balances, a larger portfolio and a higher share of loans 90 or more days delinquent. The $14.2m is the total expense increase, not a separately quantified advance-loss provision.",
       "sources": [
         {
@@ -406,7 +406,7 @@
       "id": "pfsi-q226-cenlar-outlook",
       "cik": "0001745916",
       "report_period": "2026-Q2",
-      "title": "Cenlar is an operating-leverage expectation",
+      "title": "Cenlar and operating leverage",
       "text": "In the earnings release, CEO David Spector said technology-enabled efficiency and scale were expected to produce operating leverage as the Cenlar subservicing portfolio is onboarded. He described fee-based revenue as part of the path to long-term return-on-equity targets. These are management expectations; the statement does not quantify realized savings or steady-state cost per loan.",
       "sources": [
         {

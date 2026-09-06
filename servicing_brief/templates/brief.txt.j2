@@ -41,10 +41,15 @@ Notes
 Source context
 {% for item in selected_excerpts %}"{{ item.text }}" [{{ item.number }}; {{ item.location }}; {{ item.url }}]
 {% endfor %}{% endif %}{% if questions %}
-Investor questions
+Questions
 {% for question in questions %}{{ loop.index }}. {{ question }}
 {% endfor %}{% endif %}
-Sources
+{% if ai_analysis %}AI Analysis
+{% for item in ai_analysis %}{% if item.title %}
+{{ item.title }}
+{% endif %}{{ item.text }}{% for proof in item.sources %} [{{ proof.number }}]{% endfor %}
+
+{% endfor %}{% endif %}Sources
 {% for source in sources %}[{{ source.number }}] {{ source.name }}{% if source.date %} · {{ source.date }}{% endif %}
 {{ source.url }}
 {% endfor %}{% if issues %}
