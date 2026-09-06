@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+import servicing_brief.analysis as analysis_module
 from servicing_brief.analysis import (
     AnalysisValidationError,
     build_analysis_prompt,
@@ -122,6 +123,71 @@ def test_valid_analysis_accepts_original_long_paragraph_and_normalizes_sources(t
     assert selected["sections"][0]["sources"][0]["document_id"] == document.id
     assert selected["sections"][0]["sources"][0]["archive_sha256"] == document.content_hash
     assert selected["sections"][0]["support"][0]["source_numbers"] == [1]
+
+
+def test_duplicate_source_proofs_reuse_archive_hash_cache(tmp_path: Path, monkeypatch) -> None:
+    document = _document(tmp_path)
+    catalog = _catalog(document)
+    catalog["source_manifest"] = [_source_proof(document, location="Manifest source")]
+    original_sha256 = analysis_module.hashlib.sha256
+    hash_calls = []
+
+    def counted_sha256(data=b"", *args, **kwargs):
+        hash_calls.append(data)
+        return original_sha256(data, *args, **kwargs)
+
+    monkeypatch.setattr(analysis_module.hashlib, "sha256", counted_sha256)
+
+    selected = select_analysis(catalog, [document], identity=IDENTITY, base_dir=tmp_path)
+
+    assert selected is not None
+    assert len(hash_calls) == 1
+
+
+def test_duplicate_source_numbers_keep_fail_closed_errors(tmp_path: Path) -> None:
+    document = _document(tmp_path)
+    catalog = _catalog(document)
+    catalog["source_manifest"] = [
+        _source_proof(document, number=1, location="First manifest source"),
+        _source_proof(document, number=1, location="Duplicate manifest source"),
+    ]
+    with pytest.raises(AnalysisValidationError, match="duplicated in source_manifest"):
+        validate_analysis(catalog, [document], identity=IDENTITY, base_dir=tmp_path)
+
+    catalog = _catalog(document)
+    catalog["sections"][0]["sources"] = [
+        _source_proof(document, number=1, location="First section source"),
+        _source_proof(document, number=1, location="Duplicate section source"),
+    ]
+    with pytest.raises(AnalysisValidationError, match="duplicated in this section"):
+        validate_analysis(catalog, [document], identity=IDENTITY, base_dir=tmp_path)
+
+
+def test_analysis_archive_change_between_calls_is_detected(tmp_path: Path) -> None:
+    document = _document(tmp_path)
+    catalog = _catalog(document)
+
+    assert validate_analysis(catalog, [document], identity=IDENTITY, base_dir=tmp_path)
+    Path(document.path).write_bytes(b"revised source")
+
+    with pytest.raises(AnalysisValidationError, match="archive_sha256"):
+        validate_analysis(catalog, [document], identity=IDENTITY, base_dir=tmp_path)
+
+
+def test_analysis_candidate_path_change_is_detected_when_archive_path_differs(tmp_path: Path) -> None:
+    document = _document(tmp_path)
+    archive_path = tmp_path / "archived-copy.html"
+    archive_path.write_bytes(b"source")
+    catalog = _catalog(document)
+    proof = _source_proof(document, location="Archived copy")
+    proof["archive_path"] = str(archive_path)
+    catalog["sections"][0]["sources"] = [proof]
+
+    assert validate_analysis(catalog, [document], identity=IDENTITY, base_dir=tmp_path)
+    Path(document.path).write_bytes(b"revised candidate")
+
+    with pytest.raises(AnalysisValidationError, match="supplied archived document"):
+        validate_analysis(catalog, [document], identity=IDENTITY, base_dir=tmp_path)
 
 
 def test_wrong_company_or_event_is_empty_but_matching_stale_archive_fails_closed(tmp_path: Path) -> None:

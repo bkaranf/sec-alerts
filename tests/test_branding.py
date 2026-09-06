@@ -10,6 +10,7 @@ import zlib
 
 import pytest
 
+import servicing_brief.branding as branding_module
 from servicing_brief.branding import brand_view, load_brand_registry, lookup_brand, validate_brand_registry
 
 
@@ -100,6 +101,67 @@ def test_exact_verified_ticker_returns_hashed_brand_asset(tmp_path: Path, monkey
     assert result["local_asset_path"] == str(asset.resolve())
     assert result["gap_reason"] is None
     assert Path(registry).exists() and asset.exists()
+
+
+def test_load_brand_registry_uses_one_validation_snapshot(tmp_path: Path, monkeypatch) -> None:
+    registry, _ = _write_registry(tmp_path)
+    original_read = branding_module._read
+    original_entry_errors = branding_module._entry_errors
+    read_calls = []
+    entry_calls = []
+
+    def read(path):
+        read_calls.append(path)
+        return original_read(path)
+
+    def entry_errors(entry, root):
+        entry_calls.append(entry)
+        return original_entry_errors(entry, root)
+
+    monkeypatch.setattr(branding_module, "_read", read)
+    monkeypatch.setattr(branding_module, "_entry_errors", entry_errors)
+
+    result = load_brand_registry(registry)
+
+    assert result["brands"]["EXM"]["company_name"] == "Example Mortgage Holdings"
+    assert len(read_calls) == 1
+    assert len(entry_calls) == 1
+
+
+def test_strict_brand_load_preserves_invalid_errors_and_non_strict_fallback(tmp_path: Path) -> None:
+    registry, _ = _write_registry(tmp_path, verified=False, primary_color="#12345")
+    errors = validate_brand_registry(registry)
+
+    with pytest.raises(branding_module.BrandRegistryError) as exc:
+        load_brand_registry(registry)
+
+    assert str(exc.value) == "; ".join(errors)
+    assert load_brand_registry(registry, strict=False)["brands"] == {}
+
+
+def test_brand_asset_change_between_calls_is_detected(tmp_path: Path, monkeypatch) -> None:
+    registry, asset = _write_registry(tmp_path)
+    monkeypatch.setattr("servicing_brief.branding.DEFAULT_REGISTRY_PATH", registry)
+
+    assert lookup_brand("EXM", "Example Mortgage Holdings")["verified"] is True
+    asset.write_bytes(_PNG + b"changed")
+
+    result = lookup_brand("EXM", "Example Mortgage Holdings")
+
+    assert result["verified"] is False
+    assert result["local_asset_path"] is None
+
+
+def test_brand_registry_change_between_calls_is_observed(tmp_path: Path, monkeypatch) -> None:
+    registry, _ = _write_registry(tmp_path)
+    monkeypatch.setattr("servicing_brief.branding.DEFAULT_REGISTRY_PATH", registry)
+
+    assert load_brand_registry(registry)["brands"]
+    payload = json.loads(registry.read_text(encoding="utf-8"))
+    payload["brands"]["EXM"]["verified"] = False
+    registry.write_text(json.dumps(payload), encoding="utf-8")
+
+    assert load_brand_registry(registry, strict=False)["brands"] == {}
 
 
 def test_ticker_lookup_keeps_callers_display_name_without_name_matching(tmp_path: Path, monkeypatch) -> None:

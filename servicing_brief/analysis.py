@@ -203,6 +203,7 @@ def _document_for_source(
     source_url: str,
     where: str,
     base_dir: Path | None,
+    hash_cache: dict[Path, str],
 ) -> Any:
     candidates = []
     for document in documents:
@@ -213,7 +214,10 @@ def _document_for_source(
             document_path = _resolve_path(document_path_value, base_dir)
             if not document_path.is_file():
                 continue
-            document_actual_hash = hashlib.sha256(document_path.read_bytes()).hexdigest().lower()
+            document_actual_hash = hash_cache.get(document_path)
+            if document_actual_hash is None:
+                document_actual_hash = hashlib.sha256(document_path.read_bytes()).hexdigest().lower()
+                hash_cache[document_path] = document_actual_hash
             if document_actual_hash != _document_hash(document):
                 continue
         candidates.append(document)
@@ -273,7 +277,7 @@ def _validate_source(
         hash_cache[archive_path] = actual_hash
     if actual_hash.lower() != archive_hash:
         raise AnalysisValidationError(f"{section_where}.archive_sha256 does not match archive_path")
-    document = _document_for_source(raw, documents, expected, archive_hash, archive_path, source_url, section_where, base_dir)
+    document = _document_for_source(raw, documents, expected, archive_hash, archive_path, source_url, section_where, base_dir, hash_cache)
     document_url = str(_field(document, "url", "") or "").strip()
     if document_url and document_url != source_url:
         raise AnalysisValidationError(f"{section_where}.source_url does not match the archived document")

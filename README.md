@@ -8,7 +8,9 @@ The private [bkaranf/sec-alerts repository](https://github.com/bkaranf/sec-alert
 
 The repository versions the Python code, templates, controls and documentation, deterministic source fixtures, and official brand assets. Source collection archives, email history, local configuration and credentials, generated review snapshots, and runtime state remain local for the initial private publication. Tools under `tools` that inspect historical snapshots therefore require the corresponding locally collected inputs.
 
-Six legacy path source files under `output/five-company-review` are intentionally retained for tools and tests: `render_email.py`, `email-template.html.j2`, `package_email.py`, `add_charts.py`, `audit_redesign.py`, and `validate_reviews.py`. They are explicit exceptions to the generated-output ignore rule and stay at their current paths.
+Reusable reviewed-brief rendering lives in `servicing_brief/review_rendering.py`, with its template in `servicing_brief/templates/review_email.html.j2`. The older `output/five-company-review/render_email.py` and `email-template.html.j2` paths remain compatibility entry points. Historical packaging and review utilities also remain there: `package_email.py`, `add_charts.py`, `audit_redesign.py`, and `validate_reviews.py`. These six paths are explicit exceptions to the generated-output ignore rule.
+
+The [repository map](docs/REPOSITORY.md) distinguishes application code, development tools, compatibility paths and protected local artifacts.
 
 ## Install on Windows
 

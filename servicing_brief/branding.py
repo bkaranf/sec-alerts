@@ -170,6 +170,26 @@ def _entry_errors(entry: Any, root: Path) -> list[str]:
     return errors
 
 
+def _validate_payload(payload: Mapping[str, Any], registry: Path) -> tuple[list[str], dict[str, dict[str, Any]]]:
+    """Validate one loaded registry snapshot and retain its valid entries."""
+
+    errors: list[str] = []
+    brands: dict[str, dict[str, Any]] = {}
+    for ticker, entry in payload.get("brands", {}).items():
+        entry_errors = _entry_errors(entry, registry.parent)
+        errors.extend(f"{ticker}: {error}" for error in entry_errors)
+        if not entry_errors:
+            brands[str(ticker).upper()] = dict(entry)
+    neutral = payload.get("neutral", {})
+    if neutral and not isinstance(neutral, dict):
+        errors.append("neutral must be an object")
+    elif isinstance(neutral, dict):
+        for key in NEUTRAL_BRAND:
+            if key in neutral and not _hex(neutral[key]):
+                errors.append(f"neutral: {key} must be six-digit hex")
+    return errors, brands
+
+
 def _read(path: str | Path) -> tuple[dict[str, Any], Path]:
     registry = Path(path).expanduser().resolve()
     try:
@@ -190,17 +210,7 @@ def validate_brand_registry(path: str | Path | None = None) -> list[str]:
 
     path = DEFAULT_REGISTRY_PATH if path is None else path
     payload, registry = _read(path)
-    errors: list[str] = []
-    for ticker, entry in payload.get("brands", {}).items():
-        for error in _entry_errors(entry, registry.parent):
-            errors.append(f"{ticker}: {error}")
-    neutral = payload.get("neutral", {})
-    if neutral and not isinstance(neutral, dict):
-        errors.append("neutral must be an object")
-    elif isinstance(neutral, dict):
-        for key in NEUTRAL_BRAND:
-            if key in neutral and not _hex(neutral[key]):
-                errors.append(f"neutral: {key} must be six-digit hex")
+    errors, _brands = _validate_payload(payload, registry)
     return errors
 
 
@@ -209,7 +219,7 @@ def load_brand_registry(path: str | Path | None = None, *, strict: bool = True) 
 
     path = DEFAULT_REGISTRY_PATH if path is None else path
     payload, registry = _read(path)
-    errors = validate_brand_registry(path)
+    errors, brands = _validate_payload(payload, registry)
     if strict and errors:
         raise BrandRegistryError("; ".join(errors))
     neutral = dict(NEUTRAL_BRAND)
@@ -217,11 +227,6 @@ def load_brand_registry(path: str | Path | None = None, *, strict: bool = True) 
         for key in neutral:
             if _hex(payload["neutral"].get(key)):
                 neutral[key] = payload["neutral"][key]
-    brands = {
-        str(ticker).upper(): dict(entry)
-        for ticker, entry in payload.get("brands", {}).items()
-        if not _entry_errors(entry, registry.parent)
-    }
     return {"version": 1, "neutral": neutral, "brands": brands, "path": registry}
 
 

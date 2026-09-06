@@ -2,14 +2,12 @@
 from datetime import datetime, timezone
 from hashlib import sha256
 import base64
-import importlib.util
 import json
 from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
-from jinja2 import Environment, FileSystemLoader
 from servicing_brief.config import load_config
 from servicing_brief.branding import brand_view, validate_page_theme
 from servicing_brief.company_boundary import require_company_boundary, validate_mime_message
@@ -19,6 +17,8 @@ from servicing_brief.pipeline import write_report
 from servicing_brief.reader_value_release import refresh_report_review
 from servicing_brief.reader_content import assert_reader_content
 from servicing_brief.reporting import build_report
+from servicing_brief import review_rendering as renderer
+from servicing_brief.review_rendering import create_review_environment
 from build_company_editorial import build as curate
 from email import policy
 from email.parser import BytesParser
@@ -27,11 +27,8 @@ OUT = ROOT/'output/company-briefs'
 
 
 def renderer_module():
-    path=ROOT/'output/five-company-review/render_email.py'
-    spec=importlib.util.spec_from_file_location('company_renderer',path)
-    module=importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    """Return the packaged renderer for legacy local callers."""
+    return renderer
 
 
 def document_for_source(source, raw, identity):
@@ -81,9 +78,9 @@ def save(config, ticker, report, documents):
 
 def main():
     curate()
-    renderer=renderer_module()
+    renderer = renderer_module()
     overlays=json.loads((OUT/'editorial.json').read_text(encoding='utf8'))['companies']
-    env=Environment(loader=FileSystemLoader([ROOT/'output/five-company-review',ROOT/'servicing_brief/templates']),autoescape=True,trim_blocks=True,lstrip_blocks=True)
+    env=create_review_environment()
     config=load_config(ROOT/'config.example.toml')
     config.update(_send=False,_storage=str(OUT/'scratch'),ai={'enabled':False})
     config['email'].update(recipient='bkaranf5@gmail.com',from_address='bkaranf5@gmail.com')
