@@ -35,7 +35,7 @@ if (Test-Path -LiteralPath $PythonExe -PathType Leaf) {
 } else {
     $command = Get-Command $PythonExe -ErrorAction SilentlyContinue
     if (-not $command) {
-        throw "Python executable was not found: $PythonExe. Run uv sync or pass -PythonExe explicitly."
+        throw "Python executable was not found: $PythonExe. Run uv sync --extra sec or pass -PythonExe explicitly."
     }
     $PythonExe = $command.Source
 }

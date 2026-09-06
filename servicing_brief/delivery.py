@@ -27,6 +27,7 @@ import ssl
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from email import policy
+from email.generator import BytesGenerator
 from email.message import EmailMessage
 from email.parser import BytesParser
 from email.utils import format_datetime
@@ -883,6 +884,17 @@ def _message_bytes(message: EmailMessage) -> bytes:
     return message.as_bytes(policy=policy.SMTP)
 
 
+def _message_size(message: EmailMessage) -> int:
+    """Count the exact SMTP encoding without retaining another complete copy."""
+    class Counter:
+        size = 0
+        def write(self, data: bytes) -> None:
+            self.size += len(data)
+    counter = Counter()
+    BytesGenerator(counter, policy=policy.SMTP).flatten(message)
+    return counter.size
+
+
 def _email_compatible_html(html_body: str) -> str:
     """Keep styled section containers when Gmail sanitizes received mail.
 
@@ -1121,16 +1133,23 @@ def _pack_attachments(
             total_parts=9999,
         )
 
+    # Most earnings packets fit one message. Measure that packet once instead
+    # of repeatedly encoding all of its growing prefixes. The base64 lower
+    # bound avoids this extra attempt for packets that clearly need splitting.
+    if len(attachments) > 1 and sum(4 * ((len(item.data) + 2) // 3) for item in attachments) < limit:
+        if _message_size(candidate(attachments)) <= limit:
+            return [list(attachments)]
+
     for item in attachments:
         proposed = current + [item]
-        if len(_message_bytes(candidate(proposed))) <= limit:
+        if _message_size(candidate(proposed)) <= limit:
             current = proposed
             continue
         if current:
             groups.append(current)
             current = []
         single = candidate([item])
-        if len(_message_bytes(single)) <= limit:
+        if _message_size(single) <= limit:
             current = [item]
         else:
             _append_omission(

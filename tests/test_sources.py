@@ -13,9 +13,15 @@ from filelock import FileLock
 
 from servicing_brief.models import SourceResult
 from servicing_brief.sources import collector as collector_module
+from servicing_brief.sources import common as common_module
 from servicing_brief.sources import ir as ir_module
 from servicing_brief.sources import ratelimit as ratelimit_module
 from servicing_brief.sources import sec as sec_module
+
+
+@contextlib.contextmanager
+def _acquired_sec_guard(*_args, **_kwargs):
+    yield {"acquired": True, "manager_verified": True}
 
 
 class FakeAttachment:
@@ -116,6 +122,73 @@ def test_sec_missing_identity_is_explicit_and_does_not_prompt(source_config, mon
     assert result.documents == []
     assert result.errors[0]["credentials"] == "configured=no"
     assert "configured-for-test" not in str(result.errors)
+
+
+def test_sec_missing_edgartools_reports_install_hint(source_config, monkeypatch):
+    monkeypatch.setenv("EDGAR_IDENTITY", "configured-for-test")
+    monkeypatch.setattr(sec_module, "sec_acquisition_guard", _acquired_sec_guard)
+    monkeypatch.setitem(sys.modules, "edgar", None)
+
+    result = sec_module.discover_sec(source_config, source_config["companies"][0], bootstrap=True)
+
+    assert result.documents == []
+    assert result.pending == []
+    assert result.checkpoints == {}
+    assert len(result.errors) == 1
+    assert "uv sync --extra sec" in result.errors[0]["error"]
+    assert result.errors[0]["blocked"] is False
+    assert result.errors[0]["retryable"] is True
+
+
+def test_doctor_sec_missing_edgartools_reports_install_hint(source_config, monkeypatch):
+    monkeypatch.setenv("EDGAR_IDENTITY", "configured-for-test")
+    monkeypatch.setattr(sec_module, "sec_acquisition_guard", _acquired_sec_guard)
+    monkeypatch.setitem(sys.modules, "edgar", None)
+
+    result = sec_module.doctor_sec(source_config)
+
+    assert result["available"] is False
+    assert result["access_tested"] is True
+    assert result["access_status"] == "dependency_missing"
+    assert "uv sync --extra sec" in result["detail"]
+    assert result["error"] == result["detail"]
+
+
+def test_missing_sec_dependency_does_not_suppress_independent_ir(source_config, monkeypatch):
+    monkeypatch.setenv("EDGAR_IDENTITY", "configured-for-test")
+    monkeypatch.setattr(sec_module, "sec_acquisition_guard", _acquired_sec_guard)
+    monkeypatch.setitem(sys.modules, "edgar", None)
+    ir_calls = []
+
+    def fake_ir(_config, company, **_kwargs):
+        ir_calls.append(company["ticker"])
+        return SourceResult(checked=[company["ticker"]])
+
+    monkeypatch.setattr(collector_module, "discover_ir", fake_ir)
+    result = collector_module.collect(source_config, bootstrap=True)
+
+    assert ir_calls == ["TFC", "PFSI"]
+    assert len(result.errors) == 2
+    assert all(error["source"] == "sec" for error in result.errors)
+    assert all("uv sync --extra sec" in error["error"] for error in result.errors)
+    assert result.checked == ["TFC", "PFSI"]
+
+
+def test_ir_and_sec_reuse_common_source_helper_aliases(source_config, monkeypatch):
+    assert ir_module._sources_config is common_module._sources_config
+    assert sec_module._sources_config is common_module._sources_config
+    assert ir_module._storage is common_module._storage
+    assert sec_module._storage is common_module._storage
+    assert ir_module._period_order is common_module._period_order
+    assert sec_module._period_order is common_module._period_order
+    assert ir_module._safe_error is common_module._safe_error
+    assert sec_module._safe_error is common_module._safe_error
+    assert common_module._sources_config({"sources": "invalid"}) == {}
+    assert common_module._storage(source_config) == Path(source_config["_storage"]).resolve()
+    assert common_module._period_order("2026-FY") == (2026, 4)
+    assert common_module._period_order("not-a-period") == (0, 0)
+    monkeypatch.setenv("EDGAR_IDENTITY", "configured-for-test")
+    assert common_module._safe_error(RuntimeError("configured-for-test\nrequest failed")) == "[identity] request failed"
 
 
 def test_ir_discovery_preserves_official_to_cdn_relationship(source_config, monkeypatch):

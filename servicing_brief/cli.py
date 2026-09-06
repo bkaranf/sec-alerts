@@ -7,8 +7,53 @@ from logging.handlers import RotatingFileHandler
 import os
 from pathlib import Path
 import sys
-from .config import load_config, ConfigError
-from .state import State
+
+
+_MISSING = object()
+
+
+def load_config(path: str | Path = "config.toml") -> dict:
+    """Load configuration lazily while retaining the historical patch seam."""
+
+    from .config import load_config as _load_config
+
+    return _load_config(path)
+
+
+def _config_error_type():
+    configured = globals().get("ConfigError", _MISSING)
+    if configured is not _MISSING:
+        return configured
+    from .config import ConfigError
+
+    return ConfigError
+
+
+def _state_type():
+    configured = globals().get("State", _MISSING)
+    if configured is not _MISSING:
+        return configured
+    from .state import State
+
+    return State
+
+
+def __getattr__(name: str):
+    """Keep legacy module attributes available without eager state/config imports."""
+
+    if name == "ConfigError":
+        from .config import ConfigError
+
+        return ConfigError
+    if name == "State":
+        from .state import State
+
+        return State
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | {"ConfigError", "State"})
 
 
 def configure_logging(storage: Path):
@@ -21,6 +66,23 @@ def configure_logging(storage: Path):
     # Third-party debug logs could expose SEC identity, HTTP headers or SMTP credentials.
     for name in ("edgar", "httpx", "httpcore", "openai"):
         logging.getLogger(name).setLevel(logging.CRITICAL)
+
+
+def _sec_backend_check(config: dict) -> dict:
+    """Check the optional SEC provider without importing its heavy package."""
+
+    try:
+        available = importlib.util.find_spec("edgar") is not None
+    except (ImportError, ValueError):
+        available = False
+    if available:
+        return {"check": "sec_backend", "status": "ok", "provider": "edgartools"}
+    return {
+        "check": "sec_backend",
+        "status": "failed",
+        "provider": "edgartools",
+        "detail": "EdgarTools is not installed. Run `uv sync --extra sec` and retry.",
+    }
 
 
 def doctor(config, *, offline=False):
@@ -50,6 +112,7 @@ def doctor(config, *, offline=False):
         else:
             checks.append({"check": "sources", "status": "not_tested", "detail": "Run bootstrap --dry-run for a full collection check."})
     else:
+        checks.append(_sec_backend_check(config))
         checks.append({"check": "network", "status": "not_tested", "detail": "Offline doctor requested."})
     from .delivery import doctor_email
     checks.extend(doctor_email(config))
@@ -80,6 +143,7 @@ def parser():
 
 def main(argv=None):
     args = parser().parse_args(argv)
+    config_error_type = _config_error_type()
     try:
         config = load_config(args.config)
         storage = Path(config["_storage"])
@@ -87,7 +151,7 @@ def main(argv=None):
         if args.command == "doctor":
             response = doctor(config, offline=args.offline)
         elif args.command == "status":
-            state = State(storage / "state.sqlite3")
+            state = _state_type()(storage / "state.sqlite3")
             try:
                 response = state.status()
                 from . import delivery
@@ -123,7 +187,7 @@ def main(argv=None):
         if isinstance(response, list) and any(item.get("status") not in {"accepted", "already_accepted"} for item in response):
             return 2
         return 0
-    except ConfigError as exc:
+    except config_error_type as exc:
         print(json.dumps({"status": "configuration_error", "detail": str(exc)}), file=sys.stderr)
         return 2
     except Exception as exc:

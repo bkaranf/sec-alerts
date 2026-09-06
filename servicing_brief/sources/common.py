@@ -20,6 +20,31 @@ from urllib.parse import urlparse
 from servicing_brief.models import Document
 
 
+def _sources_config(config: dict[str, Any]) -> dict[str, Any]:
+    value = config.get("sources", {})
+    return value if isinstance(value, dict) else {}
+
+
+def _storage(config: dict[str, Any]) -> Path:
+    value = config.get("_storage") or _sources_config(config).get("storage") or "data"
+    return Path(str(value)).resolve()
+
+
+def _safe_error(exc: BaseException) -> str:
+    message = str(exc).strip() or type(exc).__name__
+    identity = os.environ.get("EDGAR_IDENTITY", "")
+    if identity:
+        message = message.replace(identity, "[identity]")
+    return " ".join(message.split())[:500]
+
+
+def _period_order(period: str) -> tuple[int, int]:
+    match = re.fullmatch(r"(20\d{2})-(?:Q([1-4])|FY)", period or "")
+    if not match:
+        return (0, 0)
+    return int(match.group(1)), int(match.group(2) or 4)
+
+
 _PERIOD_PATTERNS = (
     # 2026 Q2 / 2026-Q2 / 2026Q2 / Q2 2026 / Q2-2026
     re.compile(r"\b(20\d{2})\s*[-_/ ]?\s*[Qq]([1-4])\b"),

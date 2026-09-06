@@ -17,6 +17,7 @@ from servicing_brief.extraction import (
 from servicing_brief.issuer_tables import extract_issuer_tables
 from servicing_brief.models import Document
 from servicing_brief.narrative import _validate_claims
+from servicing_brief import reporting
 
 
 def _document(tmp_path: Path, content: bytes, *, name: str = "source") -> Document:
@@ -35,6 +36,53 @@ def _document(tmp_path: Path, content: bytes, *, name: str = "source") -> Docume
         content_hash=sha256(content).hexdigest(),
         metadata={"ticker": "TST"},
     )
+
+
+def test_report_reuses_verified_spans_and_rereads_changed_sources(tmp_path, monkeypatch):
+    document = _document(tmp_path, b'<p>Servicing results improved due to lower operating expense.</p>')
+    read = reporting.read_document_spans
+    calls = []
+    def read_once(doc):
+        calls.append(doc)
+        return read(doc)
+    monkeypatch.setattr(reporting, 'read_document_spans', read_once)
+    expected = (extract_financial_facts(document), extract_commentary(document), [])
+    assert reporting._facts_for_documents([document], {}) == expected
+    assert len(calls) == 1
+    Path(document.path).write_bytes(b'Changed source')
+    facts, comments, errors = reporting._facts_for_documents([document], {})
+    assert facts == comments == []
+    assert errors == [{'document_id': document.id, 'error': 'ArchiveIntegrityError'}]
+    assert len(calls) == 2
+
+
+@pytest.mark.parametrize('failed_stage', ['facts', 'commentary'])
+def test_report_preserves_extraction_failure_order(tmp_path, monkeypatch, failed_stage):
+    document = _document(tmp_path, b'<p>Valid source</p>')
+    fact = _fact()
+    reached = []
+    def facts(*args, **kwargs):
+        if failed_stage == 'facts':
+            raise ValueError('fact failure')
+        return [fact]
+    def commentary(*args, **kwargs):
+        reached.append(True)
+        raise ValueError('commentary failure')
+    monkeypatch.setattr(reporting, '_financial_facts_from_spans', facts)
+    monkeypatch.setattr(reporting, '_commentary_from_spans', commentary)
+    result, comments, errors = reporting._facts_for_documents([document], {})
+    assert result == ([] if failed_stage == 'facts' else [fact])
+    assert bool(reached) == (failed_stage == 'commentary')
+    assert not comments and errors[0]['error'] == 'ValueError'
+
+
+def test_transcript_without_commentary_never_parses_or_creates_facts(tmp_path, monkeypatch):
+    document = replace(_document(tmp_path, b'<p>Call remarks</p>'), kind='transcript')
+    def unused(*args, **kwargs):
+        raise AssertionError('No parse or commentary work is needed')
+    monkeypatch.setattr(reporting, 'read_document_spans', unused)
+    monkeypatch.setattr(reporting, '_commentary_from_spans', unused)
+    assert reporting._facts_for_documents([document], {}, include_commentary=False) == ([], [], [])
 
 
 def _fact(

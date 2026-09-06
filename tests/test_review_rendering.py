@@ -6,7 +6,6 @@ import importlib.util
 import re
 import threading
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -155,43 +154,17 @@ def test_legacy_nonfunction_patch_is_restored_after_dispatch(monkeypatch: pytest
     assert legacy._impl.MONEY_RE is original
 
 
-def test_overlapping_legacy_dispatches_are_serialized(monkeypatch: pytest.MonkeyPatch) -> None:
-    original = legacy._impl._metric_groups
-    entered = threading.Event()
-    first_started = threading.Event()
-    release = threading.Event()
-    second_started = threading.Event()
-    errors: list[BaseException] = []
-
-    def patched_metric_groups(*args, **kwargs):
-        entered.set()
-        release.wait(timeout=5)
-        return original(*args, **kwargs)
-
-    def render_once(started: threading.Event) -> None:
-        try:
-            started.set()
-            legacy._review(_raw_review(), "TST", False, _overlay(), 1)
-        except BaseException as exc:  # pragma: no cover - assertion reports the worker failure
-            errors.append(exc)
-
-    monkeypatch.setattr(legacy, "_metric_groups", patched_metric_groups)
-    first = threading.Thread(target=render_once, args=(first_started,))
-    first.start()
-    assert entered.wait(timeout=2)
-
-    second = threading.Thread(target=render_once, args=(second_started,))
-    second.start()
-    assert second_started.wait(timeout=2)
-    assert not legacy._PATCH_LOCK.acquire(blocking=False)
-    release.set()
-    first.join(timeout=5)
-    second.join(timeout=5)
-
-    assert not first.is_alive()
-    assert not second.is_alive()
-    assert errors == []
-    assert legacy._impl._metric_groups is original
+def test_overlapping_legacy_calls_observe_the_same_override(monkeypatch: pytest.MonkeyPatch) -> None:
+    from concurrent.futures import ThreadPoolExecutor
+    barrier = threading.Barrier(2)
+    def display(value):
+        barrier.wait(timeout=5)
+        return str(value).replace("special", "-$1m")
+    monkeypatch.setattr(legacy, "_display", display)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(legacy._financial_display, ["special", "special"]))
+    assert results == ["($1m)", "($1m)"]
+    assert review_rendering._financial_display("special") == "special"
 
 
 def test_legacy_main_passes_historical_defaults_without_running_the_cli(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -202,7 +175,7 @@ def test_legacy_main_passes_historical_defaults_without_running_the_cli(monkeypa
         seen.update(kwargs)
         return 17
 
-    monkeypatch.setattr(legacy, "_impl", SimpleNamespace(main=fake_main))
+    monkeypatch.setattr(legacy, "_run", fake_main)
     assert legacy.main(["--tickers", "TST"]) == 17
     assert seen["argv"] == ["--tickers", "TST"]
     assert seen["default_review_root"] == LEGACY_ROOT

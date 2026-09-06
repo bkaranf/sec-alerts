@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "Evidence-backed mortgage servicing disclosure monitoring and email briefings"
 requires-python = ">=3.12"
 dependencies = [
-  "edgartools>=5.0,<6",
   "httpx>=0.28,<1",
   "beautifulsoup4>=4.13,<5",
   "jinja2>=3.1,<4",
@@ -14,6 +13,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+sec = ["edgartools>=5.0,<6"]
 ai = ["openai>=2,<3"]
 
 [dependency-groups]

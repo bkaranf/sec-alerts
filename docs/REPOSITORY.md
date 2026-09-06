@@ -30,6 +30,17 @@ Normal output continues to contain exactly one company and earnings event.
 Historical combined output remains available only through the existing explicit
 archive option. Moving code does not grant publication approval or enable sends.
 
+The legacy adapter binds renderer functions to each legacy module's own globals.
+Local overrides remain isolated without temporarily patching the package or
+serializing independent renders through a lock.
+
+The lightweight cleanup retired 12 one-off scripts for completed improvement
+loops and delivered-brief audits. Their source remains available at Git commit
+`9d2be41`; their evidence remains under `output/brief-improvement`,
+`output/reader-value-review` and `output/five-company-review/sent-2026-09-05`.
+The consumer audit and protected-file hashes are recorded locally in
+`output/lightweight-refactor-20260905/review/retired-tools.json`.
+
 ## Refactoring without changing output
 
 Before changing rendering or validation plumbing, freeze the current worktree
@@ -52,3 +63,8 @@ fresh review under `UI_CONTENT_STANDARD.md`.
 Repository cleanup does not include deleting archived evidence, review records,
 sent mail, state databases or local configuration. Those files are operational
 history, even when they are large or ignored by Git.
+
+Financial and commentary extraction share one verified span list inside each
+reporting call. Public extractors still verify source bytes on every call;
+transcript passage extraction and dedicated issuer-table parsing retain their
+separate controls. No cross-call archive cache is introduced.

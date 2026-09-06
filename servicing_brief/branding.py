@@ -18,8 +18,6 @@ import re
 from typing import Any, Mapping
 from urllib.parse import urlparse
 
-import pymupdf
-
 
 DEFAULT_REGISTRY_PATH = Path(__file__).with_name("company_branding.json")
 
@@ -82,6 +80,8 @@ def _png_dimensions(data: bytes) -> tuple[int, int] | None:
     if not data.startswith(_PNG_SIGNATURE):
         return None
     try:
+        import pymupdf
+
         pixmap = pymupdf.Pixmap(data)
         width, height = int(pixmap.width), int(pixmap.height)
     except Exception:

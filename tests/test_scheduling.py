@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
 import os
 from pathlib import Path
 import shutil
@@ -113,11 +114,22 @@ times = ["07:00", "18:00"]
         encoding="utf-8",
     )
     root = Path(__file__).resolve().parents[1]
-    python = root / ".venv" / "Scripts" / "python.exe"
-    if not python.exists():
-        import pytest
-
-        pytest.skip("project virtualenv is unavailable")
+    python = tmp_path / "python-with-sec.cmd"
+    python.write_text(
+        "@echo off\r\n"
+        + "echo "
+        + json.dumps({
+            "schedule_enabled": True,
+            "recipient": True,
+            "sender": True,
+            "username": True,
+            "password": True,
+            "password_env": "TEST_SCHEDULER_PASSWORD",
+            "edgartools_available": True,
+        })
+        + "\r\n",
+        encoding="utf-8",
+    )
     env = os.environ.copy()
     env["SMTP_USERNAME"] = "sender@example.com"
     env["TEST_SCHEDULER_PASSWORD"] = "app-password"
@@ -143,3 +155,53 @@ times = ["07:00", "18:00"]
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "What if:" in result.stdout
+
+
+def test_windows_installer_blocks_missing_edgartools_before_registration(tmp_path: Path) -> None:
+    pwsh = shutil.which("pwsh")
+    if not pwsh:
+        import pytest
+
+        pytest.skip("PowerShell 7 is unavailable")
+    config = tmp_path / "config.toml"
+    config.write_text("[storage]\npath = \"data\"\n", encoding="utf-8")
+    fake_python = tmp_path / "python-without-sec.cmd"
+    fake_python.write_text(
+        "@echo off\r\n"
+        + "echo "
+        + json.dumps({
+            "schedule_enabled": True,
+            "recipient": True,
+            "sender": True,
+            "username": True,
+            "password": True,
+            "password_env": "TEST_SCHEDULER_PASSWORD",
+            "edgartools_available": False,
+        })
+        + "\r\n",
+        encoding="utf-8",
+    )
+    root = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        [
+            pwsh,
+            "-NoProfile",
+            "-File",
+            str(root / "scripts" / "install-schedule.ps1"),
+            "-ConfigPath",
+            str(config),
+            "-PythonExe",
+            str(fake_python),
+            "-WorkingDirectory",
+            str(root),
+            "-EnableSending",
+            "-WhatIf",
+        ],
+        cwd=root,
+        capture_output=True,
+        text=True,
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert "uv sync --extra sec" in output
+    assert "Register-ScheduledTask" not in output

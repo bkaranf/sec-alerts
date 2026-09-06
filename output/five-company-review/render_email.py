@@ -1,132 +1,51 @@
-"""Compatibility entry point for the packaged review renderer.
-
-The reusable implementation lives in :mod:`servicing_brief.review_rendering`.
-This checkout-local module keeps the historical script path, private helper
-names, template defaults, and command-line behavior available to old callers.
-"""
-
+"""Historical entry point with independent renderer globals and CLI defaults."""
 from __future__ import annotations
 
-import functools
 import importlib.util
-import inspect
-import sys
-import threading
-from contextlib import contextmanager
 from pathlib import Path
-from uuid import uuid4
+import sys
+from types import FunctionType
 
 _LEGACY_ROOT = Path(__file__).resolve().parent
 _REPOSITORY_ROOT = _LEGACY_ROOT.parents[1]
 if str(_REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPOSITORY_ROOT))
 
-_PRIVATE_IMPL_NAME = f"servicing_brief._legacy_review_rendering_{uuid4().hex}"
-_PRIVATE_IMPL_PATH = _REPOSITORY_ROOT / "servicing_brief" / "review_rendering.py"
-_PRIVATE_IMPL_SPEC = importlib.util.spec_from_file_location(_PRIVATE_IMPL_NAME, _PRIVATE_IMPL_PATH)
-if _PRIVATE_IMPL_SPEC is None or _PRIVATE_IMPL_SPEC.loader is None:
-    raise ImportError(f"Cannot load packaged renderer from {_PRIVATE_IMPL_PATH}")
-_impl = importlib.util.module_from_spec(_PRIVATE_IMPL_SPEC)
-_PRIVATE_IMPL_SPEC.loader.exec_module(_impl)
-
-
-# Re-export the historical module surface.  Functions dispatch through the
-# package module so callers that monkeypatch an old helper still affect the
-# package implementation's internal calls, as they did before the move.
-_FORWARDED_NAMES = tuple(
-    name
-    for name in _impl.__dict__
-    if not name.startswith("__") and name not in {"_impl"}
+# Execute one fresh source module per import, then bind its own functions to
+# this namespace. Legacy overrides work directly, without changing another
+# renderer, temporarily patching globals, or serializing concurrent calls.
+_spec = importlib.util.spec_from_file_location(
+    "servicing_brief._legacy_review_rendering", _REPOSITORY_ROOT / "servicing_brief/review_rendering.py"
 )
-_ORIGINALS = {name: getattr(_impl, name) for name in _FORWARDED_NAMES}
-_MISSING = object()
-_PATCH_LOCK = threading.RLock()
-
-
-@contextmanager
-def _patched_implementation():
-    """Apply legacy-module patches only for the duration of one call."""
-    with _PATCH_LOCK:
-        changed: dict[str, object] = {}
-        try:
-            for name, baseline in _ADAPTER_BASELINES.items():
-                current = globals().get(name, _MISSING)
-                if current is baseline:
-                    continue
-                changed[name] = getattr(_impl, name, _MISSING)
-                if current is _MISSING:
-                    if hasattr(_impl, name):
-                        delattr(_impl, name)
-                else:
-                    setattr(_impl, name, current)
-            yield
-        finally:
-            for name, previous in changed.items():
-                if previous is _MISSING:
-                    if hasattr(_impl, name):
-                        delattr(_impl, name)
-                else:
-                    setattr(_impl, name, previous)
-
-
-def _call_implementation(name: str, *args, **kwargs):
-    with _patched_implementation():
-        return getattr(_impl, name)(*args, **kwargs)
-
-
-for _name in _FORWARDED_NAMES:
-    _value = _ORIGINALS[_name]
-    if inspect.isfunction(_value) and _name not in {"create_review_environment", "main"}:
-        def _forward(*args, __name=_name, **kwargs):
-            return _call_implementation(__name, *args, **kwargs)
-
-        _forward = functools.update_wrapper(_forward, _value)
-        globals()[_name] = _forward
+if _spec is None or _spec.loader is None:
+    raise ImportError("Cannot load packaged review renderer")
+_impl = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_impl)
+_exports = {name: value for name, value in vars(_impl).items() if not name.startswith("__")}
+for _name, _value in _exports.items():
+    if isinstance(_value, FunctionType) and _value.__module__ == _impl.__name__:
+        _function = FunctionType(_value.__code__, globals(), _name, _value.__defaults__, _value.__closure__)
+        _function.__kwdefaults__ = _value.__kwdefaults__
+        _function.__annotations__ = _value.__annotations__
+        _function.__dict__.update(_value.__dict__)
+        _function.__doc__ = _value.__doc__
+        globals()[_name] = _function
     else:
         globals()[_name] = _value
 
+_create_environment = create_review_environment
+_run = main
+
 
 def create_review_environment(template_root: str | Path | None = None):
-    """Keep the old template-root default while using the package factory."""
-    return _call_implementation(
-        "create_review_environment",
-        _LEGACY_ROOT if template_root is None else template_root,
-    )
+    return _create_environment(_LEGACY_ROOT if template_root is None else template_root)
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the historical CLI with defaults rooted beside this adapter."""
-    return _call_implementation(
-        "main",
-        argv,
-        default_review_root=_LEGACY_ROOT,
-        template_root=_LEGACY_ROOT,
-    )
+    return _run(argv, default_review_root=_LEGACY_ROOT, template_root=_LEGACY_ROOT)
 
 
-def __getattr__(name: str):
-    return getattr(_impl, name)
-
-
-def __dir__() -> list[str]:
-    return sorted(set(globals()) | set(dir(_impl)))
-
-
-__all__ = [name for name in _FORWARDED_NAMES if not name.startswith("_")] + [
-    "create_review_environment",
-    "main",
-]
-
-
-_ADAPTER_BASELINES = {
-    name: globals().get(name, _MISSING)
-    for name in _FORWARDED_NAMES
-}
-_ADAPTER_BASELINES.update(
-    create_review_environment=create_review_environment,
-    main=main,
-)
-
+__all__ = [name for name in _exports if not name.startswith("_")]
 
 if __name__ == "__main__":
     try:

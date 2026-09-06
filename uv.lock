@@ -485,7 +485,6 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
-    { name = "edgartools" },
     { name = "filelock" },
     { name = "httpx" },
     { name = "jinja2" },
@@ -497,6 +496,9 @@ dependencies = [
 ai = [
     { name = "openai" },
 ]
+sec = [
+    { name = "edgartools" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -506,7 +508,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.13,<5" },
-    { name = "edgartools", specifier = ">=5.0,<6" },
+    { name = "edgartools", marker = "extra == 'sec'", specifier = ">=5.0,<6" },
     { name = "filelock", specifier = ">=3.18,<4" },
     { name = "httpx", specifier = ">=0.28,<1" },
     { name = "jinja2", specifier = ">=3.1,<4" },
@@ -514,7 +516,7 @@ requires-dist = [
     { name = "pymupdf", specifier = ">=1.26,<2" },
     { name = "tzdata", specifier = ">=2025.2" },
 ]
-provides-extras = ["ai"]
+provides-extras = ["sec", "ai"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8,<10" }]

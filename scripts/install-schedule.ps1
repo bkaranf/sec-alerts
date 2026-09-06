@@ -37,7 +37,7 @@ if (Test-Path -LiteralPath $PythonExe -PathType Leaf) {
 } else {
     $command = Get-Command $PythonExe -ErrorAction SilentlyContinue
     if (-not $command) {
-        throw "Python executable was not found: $PythonExe. Run uv sync or pass -PythonExe explicitly."
+        throw "Python executable was not found: $PythonExe. Run uv sync --extra sec or pass -PythonExe explicitly."
     }
     $PythonExe = $command.Source
 }
@@ -47,6 +47,7 @@ if (Test-Path -LiteralPath $PythonExe -PathType Leaf) {
 # returned to PowerShell output.
 $validationCode = @'
 import json
+import importlib.util
 import os
 import sys
 from servicing_brief.config import load_config
@@ -54,6 +55,10 @@ from servicing_brief.config import load_config
 config = load_config(sys.argv[1])
 email = config.get("email", {})
 schedule = config.get("schedule", {})
+try:
+    edgartools_available = importlib.util.find_spec("edgar") is not None
+except (ImportError, ValueError):
+    edgartools_available = False
 password_env = str(email.get("smtp_password_env", "SMTP_PASSWORD"))
 print(json.dumps({
     "schedule_enabled": schedule.get("enabled") is True,
@@ -62,6 +67,7 @@ print(json.dumps({
     "username": bool(os.environ.get("SMTP_USERNAME") or email.get("smtp_username")),
     "password": bool(os.environ.get(password_env)),
     "password_env": password_env,
+    "edgartools_available": edgartools_available,
 }))
 '@
 $validationJson = & $PythonExe -c $validationCode $ConfigPath
@@ -83,6 +89,9 @@ if (-not $validation.username) {
 }
 if (-not $validation.password) {
     throw "$($validation.password_env) is unset; configure the Gmail app password before installing."
+}
+if (-not $validation.edgartools_available) {
+    throw "EdgarTools is required for monitoring. Run uv sync --extra sec before installing the scheduled task."
 }
 
 $wrapper = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "run-scheduled.ps1")).Path

@@ -36,6 +36,10 @@ from .common import (
     source_document,
     title_kind,
     utc_now,
+    _safe_error,
+    _sources_config,
+    _storage,
+    _period_order,
 )
 from .ratelimit import sec_acquisition_guard, shared_sec_lock_path
 
@@ -96,6 +100,7 @@ _EARNINGS_8K_BODY = re.compile(
 )
 _ITEM_RE = re.compile(r"(?:item\s*)?(\d+\.\d+)", re.IGNORECASE)
 _SEC_BLOCKED = re.compile(r"\b(?:403|429|too many requests|forbidden|identity(?:\s+is)?\s+not\s+set)\b", re.I)
+_SEC_DEPENDENCY_ERROR = "EdgarTools is unavailable. Install SEC support with `uv sync --extra sec`."
 # Workiva and similar SEC exhibits often use a compact period token embedded
 # in a filename (``wellsfargo2q26pres``).  The ordinary period regex requires
 # a word boundary and therefore misses that token.  Keep this filename-only
@@ -107,14 +112,9 @@ _COMPACT_FILENAME_QUARTER = re.compile(
 )
 
 
-def _sources_config(config: dict[str, Any]) -> dict[str, Any]:
-    value = config.get("sources", {})
-    return value if isinstance(value, dict) else {}
-
-
-def _storage(config: dict[str, Any]) -> Path:
-    value = config.get("_storage") or _sources_config(config).get("storage") or "data"
-    return Path(str(value)).resolve()
+def _missing_edgartools(exc: BaseException) -> bool:
+    name = str(getattr(exc, "name", "") or "")
+    return isinstance(exc, ModuleNotFoundError) and (name == "edgar" or name.startswith("edgar."))
 
 
 def _lookback_start(config: dict[str, Any], *, bootstrap: bool, checkpoints: dict[str, str] | None, key: str) -> str:
@@ -218,13 +218,6 @@ def _candidate_period(filing: Any) -> str:
     return infer_period(title, form=form, period_end=_filing_report_date(filing))
 
 
-def _period_order(period: str) -> tuple[int, int]:
-    match = re.fullmatch(r"(20\d{2})-(?:Q([1-4])|FY)", period or "")
-    if not match:
-        return (0, 0)
-    return int(match.group(1)), int(match.group(2) or 4)
-
-
 def _filing_company(filing: Any, fallback: str) -> str:
     return str(metadata_value(filing, "company", default=fallback) or fallback).strip()
 
@@ -238,17 +231,6 @@ def _filing_cik(filing: Any) -> str:
 def _filing_url(filing: Any) -> str:
     value = metadata_value(filing, "filing_url", "homepage_url", "url", default="")
     return str(value or "")
-
-
-def _safe_error(exc: BaseException) -> str:
-    """Return a useful error without ever echoing the SEC identity value."""
-
-    message = str(exc).strip() or type(exc).__name__
-    identity = os.environ.get("EDGAR_IDENTITY", "")
-    if identity:
-        message = message.replace(identity, "[identity]")
-    # Avoid multiline dumps from transport libraries in SourceResult JSON.
-    return " ".join(message.split())[:500]
 
 
 def _is_blocked(exc: BaseException) -> bool:
@@ -1292,14 +1274,16 @@ def _discover_sec_locked(
                     result.checked.append(ticker)
                     return result
     except Exception as exc:
+        missing_edgartools = _missing_edgartools(exc)
+        blocked = False if missing_edgartools else _is_blocked(exc)
         result.errors.append({
             "source": "sec",
             "source_key": source_key,
             "ticker": ticker,
             "cik": cik,
-            "error": _safe_error(exc),
-            "blocked": _is_blocked(exc),
-            "retryable": not _is_blocked(exc),
+            "error": _SEC_DEPENDENCY_ERROR if missing_edgartools else _safe_error(exc),
+            "blocked": blocked,
+            "retryable": not blocked,
         })
         return result
 
@@ -1615,5 +1599,15 @@ def doctor_sec(config: dict[str, Any]) -> dict[str, Any]:
             count = len(_iter_filings(filings))
             output.update({"access_tested": True, "access_status": "ok", "filings_seen": count, "query_days": 30})
         except Exception as exc:
-            output.update({"access_tested": True, "access_status": "blocked" if _is_blocked(exc) else "error", "error": _safe_error(exc)})
+            if _missing_edgartools(exc):
+                output.update({
+                    "available": False,
+                    "edgartools_version": "unknown",
+                    "access_tested": True,
+                    "access_status": "dependency_missing",
+                    "detail": _SEC_DEPENDENCY_ERROR,
+                    "error": _SEC_DEPENDENCY_ERROR,
+                })
+            else:
+                output.update({"access_tested": True, "access_status": "blocked" if _is_blocked(exc) else "error", "error": _safe_error(exc)})
     return output

@@ -53,7 +53,7 @@ retained but its time is unverified.
 ## Selection and check queues
 
 ```powershell
-uv run python -m servicing_brief.calendar select `
+uv run --extra sec python -m servicing_brief.calendar select `
   --calendar output/servicer-universe/calendar.json `
   --as-of 2026-09-05T17:00:00-04:00 `
   --output output/servicer-universe/selection.json
@@ -72,7 +72,7 @@ future potential calls, and unverified call timing make the result non-
 definitive.
 
 ```powershell
-uv run python -m servicing_brief.calendar due `
+uv run --extra sec python -m servicing_brief.calendar due `
   --calendar output/servicer-universe/calendar.json `
   --as-of 2026-09-05T17:00:00-04:00
 ```
@@ -92,7 +92,7 @@ parse or invent dates. SEC URLs are rejected by this refresh path; SEC
 acquisition remains the existing EdgarTools responsibility.
 
 ```powershell
-uv run python -m servicing_brief.calendar refresh `
+uv run --extra sec python -m servicing_brief.calendar refresh `
   --companies output/servicer-universe/companies.json `
   --output output/servicer-universe/calendar.json `
   --url PFSI=https://pfsi.pennymac.com/news-events/quarterly-earnings/default.aspx
@@ -111,7 +111,7 @@ an acquisition. Daily checks can use a small overlapping date range instead
 of downloading every annual report again:
 
 ```powershell
-uv run python scripts/check_recent_earnings.py --since 2026-08-25 --through 2026-09-05
+uv run --extra sec python scripts/check_recent_earnings.py --since 2026-08-25 --through 2026-09-05
 ```
 
 This command searches 8-K and 6-K disclosures through EdgarTools, joins the
@@ -126,7 +126,7 @@ Use the calendar `due` queue to prioritize official IR checks around published
 release dates. Keep checking the IR source independently because a release
 can appear there before SEC indexing. Save new releases, presentations,
 reports and actual call material as evidence. For an already configured
-issuer, `uv run servicing-brief run-once --dry-run` uses the existing document
+issuer, `uv run --extra sec servicing-brief run-once --dry-run` uses the existing document
 pipeline to prepare separate company/event drafts and retain later-document
 updates. Review a newly discovered issuer's reporting boundary and source
 coverage before adding it to that pipeline. The expanded discovery list does

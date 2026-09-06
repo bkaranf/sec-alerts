@@ -2,7 +2,7 @@ param([string]$ConfigPath = (Join-Path $PSScriptRoot '..\config.toml'))
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pythonExe = Join-Path $projectRoot '.venv\Scripts\python.exe'
-if (-not (Test-Path -LiteralPath $pythonExe)) { throw 'Run uv sync in the project folder first.' }
+if (-not (Test-Path -LiteralPath $pythonExe)) { throw 'Run uv sync --extra sec in the project folder first.' }
 $resolvedConfig = (Resolve-Path -LiteralPath $ConfigPath).Path
 $gmailAddress = & $pythonExe -c 'import sys,tomllib; print(tomllib.load(open(sys.argv[1],"rb")).get("email",{}).get("sender",""))' $resolvedConfig
 if ($LASTEXITCODE -ne 0 -or $gmailAddress -notmatch '^[^\s@]+@gmail\.com$') {

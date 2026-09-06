@@ -747,7 +747,11 @@ def extract_financial_facts(document: Any, *, config: Mapping[str, Any] | None =
     # verified tabular layout.
     if is_transcript_document(document):
         return []
-    spans = read_document_spans(document)
+    return _financial_facts_from_spans(document, read_document_spans(document), config=config)
+
+
+def _financial_facts_from_spans(document: Any, spans: Sequence[SourceSpan], *, config: Mapping[str, Any] | None = None) -> list[Evidence]:
+    """Select numerical facts from this document's already verified spans."""
     period = document_period(document, spans)
     # Issuer table parsers may provide stricter row/column semantics than the
     # conservative generic matcher (for example, PDF tables whose cells are
@@ -914,8 +918,11 @@ def _commentary_candidate(text: str) -> bool:
 
 def extract_commentary(document: Any, *, max_items: int = 8) -> list[Commentary]:
     """Return source excerpts that explain servicing changes or limitations."""
+    return _commentary_from_spans(document, read_document_spans(document), max_items=max_items)
 
-    spans = read_document_spans(document)
+
+def _commentary_from_spans(document: Any, spans: Sequence[SourceSpan], *, max_items: int = 8) -> list[Commentary]:
+    """Select commentary from the same verified spans used for its facts."""
     period = document_period(document, spans)
     ticker = _ticker_for(document, None)
     result: list[Commentary] = []

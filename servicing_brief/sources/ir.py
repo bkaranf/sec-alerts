@@ -34,6 +34,10 @@ from .common import (
     normalize_cik,
     source_document,
     sha256_bytes,
+    _safe_error,
+    _sources_config,
+    _storage,
+    _period_order,
     title_kind,
     utc_now,
     write_json_atomic,
@@ -75,24 +79,6 @@ class _Fetched:
     status_code: int
     content: bytes
     headers: dict[str, str]
-
-
-def _sources_config(config: dict[str, Any]) -> dict[str, Any]:
-    value = config.get("sources", {})
-    return value if isinstance(value, dict) else {}
-
-
-def _storage(config: dict[str, Any]) -> Path:
-    value = config.get("_storage") or _sources_config(config).get("storage") or "data"
-    return Path(str(value)).resolve()
-
-
-def _safe_error(exc: BaseException) -> str:
-    message = str(exc).strip() or type(exc).__name__
-    identity = os.environ.get("EDGAR_IDENTITY", "")
-    if identity:
-        message = message.replace(identity, "[identity]")
-    return " ".join(message.split())[:500]
 
 
 def _user_agent(config: dict[str, Any]) -> str:
@@ -592,13 +578,6 @@ def _page_links(page_url: str, content: bytes, roots: list[str]) -> tuple[list[t
         if _same_official_host(url, roots) and any(word in f"{title} {url}".lower() for word in ("earnings", "financial", "results", "events", "reports", "investor")):
             pages.append(url)
     return documents, pages
-
-
-def _period_order(period: str) -> tuple[int, int]:
-    match = re.fullmatch(r"(20\d{2})-(?:Q([1-4])|FY)", period or "")
-    if not match:
-        return (0, 0)
-    return int(match.group(1)), int(match.group(2) or 4)
 
 
 def _period_completed(period: str) -> bool:

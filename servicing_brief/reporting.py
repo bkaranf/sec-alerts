@@ -14,7 +14,9 @@ from jinja2 import Environment, FileSystemLoader
 from bs4 import BeautifulSoup
 
 from .evidence import Evidence, compatible, derive_absolute_change, derive_rate_change, evidence_json, parse_decimal
-from .extraction import Commentary, extract_commentary, extract_financial_facts, extract_transcript_passages, is_transcript_document
+from .extraction import (Commentary, _commentary_from_spans, _financial_facts_from_spans,
+                         extract_financial_facts, extract_transcript_passages,
+                         is_transcript_document, read_document_spans)
 from .narrative import generate_narrative
 from .reviewed_context import select_context
 from .analysis import AnalysisValidationError, select_analysis
@@ -255,9 +257,13 @@ def _facts_for_documents(documents: Sequence[Any], config: Mapping[str, Any], *,
     errors: list[dict[str, Any]] = []
     for document in documents:
         try:
-            facts.extend(extract_financial_facts(document, config=config))
-            if include_commentary:
-                commentary.extend(extract_commentary(document))
+            if not include_commentary:
+                facts.extend(extract_financial_facts(document, config=config))
+                continue
+            spans = read_document_spans(document)
+            if not is_transcript_document(document):
+                facts.extend(_financial_facts_from_spans(document, spans, config=config))
+            commentary.extend(_commentary_from_spans(document, spans))
         except Exception as exc:
             errors.append({"document_id": str(_value(document, "id", "")), "error": type(exc).__name__})
     return facts, commentary, errors

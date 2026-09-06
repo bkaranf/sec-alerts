@@ -17,22 +17,24 @@ The [repository map](docs/REPOSITORY.md) distinguishes application code, develop
 Open PowerShell in this folder. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if needed, then:
 
 ```powershell
-uv sync
+uv sync --extra sec
 Copy-Item config.example.toml config.toml
-uv run servicing-brief doctor --offline
+uv run --extra sec servicing-brief doctor --offline
 ```
 
 All settings and the editable CIK-based watchlist are in `config.toml`. Credentials belong in environment variables; `.env.example` lists their names but is not automatically loaded. Python 3.12 is pinned. uv uses file copies because OneDrive can reject hard links.
+
+The `sec` extra supplies EdgarTools and its dependencies for full SEC and issuer monitoring. For offline reports, original-document packaging and email delivery, `uv sync --no-dev` installs the smaller base application. All report, evidence, branding and delivery controls remain available. SEC collection without the extra reports a setup failure; independent issuer collection continues. Add SEC support with `uv sync --extra sec`. Keep `--extra sec` on subsequent `uv run` commands so synchronization retains the monitoring dependencies. Installed wheels support the equivalent `mortgage-servicing-brief[sec]` extra.
 
 Set your own SEC identity before live discovery, for example through the Windows user environment editor. `EDGAR_IDENTITY` must contain your name and contact email in the format required by EdgarTools. The program reports only whether it is configured and never uses it as the email recipient.
 
 ## Run
 
 ```powershell
-uv run servicing-brief doctor
-uv run servicing-brief bootstrap --dry-run
-uv run servicing-brief run-once --dry-run
-uv run servicing-brief status
+uv run --extra sec servicing-brief doctor
+uv run --extra sec servicing-brief bootstrap --dry-run
+uv run --extra sec servicing-brief run-once --dry-run
+uv run --extra sec servicing-brief status
 ```
 
 Each company gets its own draft when a new earnings release is detected. If three companies report on the same day, the check prepares three independent drafts. Each draft covers one company and reporting event, with useful comparisons to that company's compatible prior periods. The first check prepares only the latest baseline for each company. Later presentations, filings and corrections produce company-specific updates; unchanged runs produce no routine email. `bootstrap` is not a reset and can be run again safely.
@@ -66,8 +68,8 @@ The script uses the sender already configured in TOML, saves the credentials in 
 Once you have configured and reviewed the recipient and credentials, these are the explicit activation commands:
 
 ```powershell
-uv run servicing-brief send-test --send
-uv run servicing-brief run-once --send
+uv run --extra sec servicing-brief send-test --send
+uv run --extra sec servicing-brief run-once --send
 ```
 
 The tool records Gmail/SMTP acceptance only after an acknowledgment. It cannot prove inbox arrival. An interrupted connection after possible acceptance is held as ambiguous for manual reconciliation, rather than automatically resent.
@@ -81,7 +83,7 @@ Local scheduling requires this computer to be available and the configured Windo
 ## Tests and coverage
 
 ```powershell
-uv run pytest -q
+uv run --extra sec pytest -q
 ```
 
 Normal tests use deterministic local fixtures and do not contact SEC, issuers or Gmail. Live smoke results, exact artifacts and remaining limits are recorded in `docs/ACCEPTANCE.md` at handoff. Source API choices, verified issuer identities and access limitations are documented in [SOURCES.md](docs/SOURCES.md). Development model routing and the execution plan are in [EXECUTION.md](docs/EXECUTION.md).
@@ -92,7 +94,7 @@ The PennyMac Q2 2026 example also includes reviewed presentation and filing cont
 
 The **AI Analysis** section follows **Questions** and contains original source-grounded prose in [the public voice](PUBLIC_VOICE.md). An AI agent authors the complete argument from the issuer documents, financial evidence and available call material. `analysis.build_analysis_prompt` reads the guide and prepares the authoring packet. Save the reviewed essay in `servicing_brief/reviewed_analysis/{ticker}-{event}.json`, or set `analysis.catalog_path` to its JSON path. The renderer verifies the company, event and original source hashes and preserves citations and supporting rationale. A changed event or source needs fresh authorship and review; the section is omitted when no matching essay exists. This authoring workflow does not require a separate API key.
 
-The separate optional API feature selects additional cited source excerpts. It requires an API key and `uv sync --extra ai` and is disabled by default. Financial tables come from validated evidence, and deterministic briefings remain available when credentials are missing, the API fails or selected excerpts fail validation. Enabling this excerpt selector alone does not create original AI Analysis.
+The separate optional API feature selects additional cited source excerpts. It requires an API key and `uv sync --extra sec --extra ai` for full monitoring and is disabled by default. Financial tables come from validated evidence, and deterministic briefings remain available when credentials are missing, the API fails or selected excerpts fail validation. Enabling this excerpt selector alone does not create original AI Analysis.
 
 ## Troubleshooting
 

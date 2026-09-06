@@ -141,6 +141,34 @@ def test_fully_encoded_size_splits_and_omits_single_oversized_document(tmp_path:
     assert str(too_large) not in omitted_message.get_body(preferencelist=('html',)).get_content()
 
 
+@pytest.mark.parametrize('body', ['Readout', 'Résumé: (£12m)', 'Line one\nLine two'])
+def test_size_counter_matches_actual_smtp_bytes(tmp_path: Path, body: str) -> None:
+    source = tmp_path / 'original.pdf'
+    source.write_bytes(bytes(range(256)) * 7)
+    path = delivery.prepare_messages(_config(), _report(body=body), [_document(source)], tmp_path/'preview')[0]
+    message = BytesParser(policy=policy.default).parsebytes(path.read_bytes())
+    assert delivery._message_size(message) == len(delivery._message_bytes(message))
+
+
+def test_fitting_packet_is_measured_once_and_keeps_attachment_order(tmp_path: Path, monkeypatch) -> None:
+    documents = []
+    for index in range(3):
+        source = tmp_path / f'source-{index}.pdf'
+        source.write_bytes(bytes([index]) * 256)
+        documents.append(_document(source))
+    measured = []
+    original = delivery._message_size
+    def measure(message):
+        measured.append(message)
+        return original(message)
+    monkeypatch.setattr(delivery, '_message_size', measure)
+    paths = delivery.prepare_messages(_config(), _report(), documents, tmp_path/'preview')
+    assert len(measured) == 1
+    message = BytesParser(policy=policy.default).parsebytes(paths[0].read_bytes())
+    expected, _ = delivery._load_attachments(documents)
+    assert [part.get_payload(decode=True) for part in message.iter_attachments()] == [item.data for item in expected]
+
+
 def test_package_key_changes_when_explicit_recipient_changes(tmp_path: Path) -> None:
     report = _report(body="x")
     first = delivery.prepare_messages(_config(recipient="one@example.com"), report, [], tmp_path / "one")[0]
