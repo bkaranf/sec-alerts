@@ -116,6 +116,80 @@ backend recovery changes with no blocking findings. The MIME regression decodes
 the production email package and confirms byte-identical regeneration of the
 older ZIP alongside the distinct corrected ZIP.
 
-The local PFSI Q2 source archive remains unavailable for the three historical
-context tests. Offline regression coverage and historical visual approval do not
-establish live-source availability or certify newly generated financial content.
+The next inspection found that the local PFSI Q2 source files were present, but
+the historical manifest still named the former OneDrive checkout. The skips
+above describe those earlier runs; they did not establish missing source bytes.
+Offline regression coverage and historical visual approval do not establish
+live-source availability or certify newly generated financial content.
+
+## Directory relocation and diagnostic failures
+
+The project moved from `C:\Users\bkara\OneDrive\Documents\ChatGPT\SEC Alerts`
+to `C:\dev\ChatGPT\SEC Alerts`. The existing database retained the former
+absolute paths for 58 primary documents, 111 images and eight report directories.
+All 169 source files at the mapped locations match their recorded SHA-256 hashes.
+All eight report folders contain their saved JSON, HTML and text; withdrawn
+records additionally carry database-only withdrawal metadata.
+
+`repair-paths` inspects an explicit root mapping through a read-only SQLite
+snapshot without initializing State or logging. Apply takes both application
+locks, creates a database backup and audit record, then changes verified pointers
+in one transaction. Source bytes, document IDs and fingerprints, report payloads,
+coverage, statuses, timestamps and delivery attempts remain unchanged. Saved MIME
+messages also require an exact raw hash and matching package/part identity.
+Unresolved paths remain explicit and produce a failure exit code even if other
+verified paths were repaired. Destination containment includes each report file,
+not just its enclosing directory.
+
+Historical manifests and analysis catalogs stay untouched. A pure mapping helper
+returns verified copies for offline inspection; it cannot add missing source or
+image-fingerprint proofs. The three real PFSI archive tests now use this explicit
+mapping in memory and pass, including changed wrapper and slide rejection.
+
+Diagnostic checks now return exit code 2 for required dependency, storage or
+enabled-source failures, including nested issuer results. Disabled issuers and
+optional email setup remain informational. Unique temporary probes preserve any
+existing `.write-probe`, and repeated CLI calls close their own logging handler.
+
+The local database has no delivery-message rows. Fixture tests cover preservation
+of accepted and ambiguous delivery history. Its five prepared and three withdrawn
+reports have no reader-value review files; pointer repair does not approve them.
+No live source request, email send, schedule activation or deployment is part of
+this repair.
+
+Verification on 2026-10-09: the full offline suite passed **565 tests**, with
+**1 skipped** because Windows did not permit native symlink creation. A separate
+mocked resolved-path escape test and the report-file containment test pass on
+this host. Independent Astra acceptance passed **55 tests**, with the same skip,
+and found no blocking issue. The previously skipped three real archive tests
+all passed. `git diff --check` passed.
+
+The runtime repair applied 66 row updates: 58 documents containing 169 verified
+paths and eight report directories. Comparison against the pre-repair snapshot
+confirmed identical database schema and all non-path state, including the five
+prepared and three withdrawn statuses. All 196 scoped source, report, manifest
+and catalog hashes stayed unchanged; the eight absent review files stayed absent.
+The backup's full logical database contents match the original snapshot. Local
+verification records are under `output/path-repair-20261009/`; the database backup
+and committed audit are under
+`data/maintenance/path-repair-6e32df51584a4f0fa25259aebbdb4ec8/`. These protected
+runtime artifacts remain ignored by Git.
+
+## Remaining source-collection findings
+
+A read-only source audit identified further concrete work outside the completed
+path repair:
+
+- An IR crawl that exhausts `max_ir_pages` can discard queued discovery work and
+  advance its checkpoint. A discovered document's retryable HTTP failure also
+  needs durable pending identity if its discovery link later disappears.
+- IR fetch treats HTTP 204 as successful empty coverage. Robots failures need a
+  deliberate policy for server errors and parser failures.
+- SEC collection has an unused primary-document fallback. HTML asset discovery
+  misses `srcset`, and empty referenced assets can disappear without pending work.
+- SEC provenance URL validation and IR destination-address validation need
+  additional boundary tests.
+
+These findings keep the broader improvement goal open. Historical acceptance
+records and passing offline tests do not prove current live collection, scheduled
+delivery, or review of newly generated financial content.

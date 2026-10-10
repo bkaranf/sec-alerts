@@ -55,6 +55,20 @@ Outputs live beneath the configured storage folder (default `data`): `archive` h
 
 Use `--config PATH` before the command for another configuration. `run-once --dry-run --offline` replays the existing local archive and clearly labels freshness as unchecked. A preview is not provider acceptance. Preview history is retained; a later explicit send submits outstanding prepared reports, so review `status` before the first send.
 
+`doctor` exits with code 2 when storage, a required dependency or an enabled source check fails. Disabled issuers and missing optional email credentials remain informational. The offline check does not establish live source or email availability.
+
+## Recover paths after moving the project
+
+If the project or storage folder moves, saved archive and report paths can still point to the old location. Set the configuration's storage path to the current folder, then inspect an explicit mapping:
+
+```powershell
+uv run --extra sec servicing-brief repair-paths --from-root 'C:\previous\SEC Alerts' --to-root 'C:\current\SEC Alerts'
+```
+
+Inspection opens the existing database read-only and reports proposed changes and unresolved files. It does not create logs or initialize state. Add `--apply` to back up the database and update verified paths. The result includes backup and audit locations beneath `data/maintenance`, or the equivalent configured storage folder. Stop collection and delivery first; an active lock prevents repair.
+
+Documents, images and saved messages must match their recorded SHA-256 hashes. Report folders must contain the saved JSON, HTML and plain text. The command preserves source bytes, report content, approval holds and delivery history. It does not search by filename or regenerate missing files. Valid paths remain unchanged; unresolved paths produce exit code 2 even when other verified changes were applied. Repeating a completed repair makes no further changes or backups.
+
 ## Connect Gmail
 
 Gmail was selected for this installation. Follow [the delivery guide](docs/DELIVERY.md) to enable 2-Step Verification, create a Gmail app password where your account permits it, and configure one explicit sender and recipient. Do not put the normal Google password or the app password in the TOML file or in chat.
@@ -88,7 +102,7 @@ Local scheduling requires this computer to be available and the configured Windo
 uv run --extra sec pytest -q
 ```
 
-Normal tests use deterministic local fixtures and do not contact SEC, issuers or Gmail. Live smoke results, exact artifacts and remaining limits are recorded in `docs/ACCEPTANCE.md` at handoff. Source API choices, verified issuer identities and access limitations are documented in [SOURCES.md](docs/SOURCES.md). Development model routing and the execution plan are in [EXECUTION.md](docs/EXECUTION.md).
+Normal tests use deterministic local fixtures and do not contact SEC, issuers or Gmail. Historical live smoke results and exact artifacts are recorded in [ACCEPTANCE.md](docs/ACCEPTANCE.md); current backend verification and remaining limits are in [RELIABILITY_REVIEW.md](docs/RELIABILITY_REVIEW.md). Source API choices, verified issuer identities and access limitations are documented in [SOURCES.md](docs/SOURCES.md). Development model routing and the execution plan are in [EXECUTION.md](docs/EXECUTION.md).
 
 Numerical tables currently use verified Truist and PennyMac source-layout rules. Other disclosures remain available as documents and cited excerpts, with numerical extraction limits stated explicitly.
 

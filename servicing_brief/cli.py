@@ -7,6 +7,7 @@ from logging.handlers import RotatingFileHandler
 import os
 from pathlib import Path
 import sys
+import tempfile
 
 
 _MISSING = object()
@@ -66,6 +67,7 @@ def configure_logging(storage: Path):
     # Third-party debug logs could expose SEC identity, HTTP headers or SMTP credentials.
     for name in ("edgar", "httpx", "httpcore", "openai"):
         logging.getLogger(name).setLevel(logging.CRITICAL)
+    return handler
 
 
 def _sec_backend_check(config: dict) -> dict:
@@ -90,16 +92,16 @@ def doctor(config, *, offline=False):
     checks = []
     try:
         storage.mkdir(parents=True, exist_ok=True)
-        probe = storage / ".write-probe"
-        probe.write_text("ok", encoding="utf-8")
-        probe.unlink()
+        # A unique temporary file cannot overwrite another invocation's probe
+        # or an existing file in the configured storage directory.
+        with tempfile.TemporaryFile(dir=storage, prefix=".write-probe-") as probe:
+            probe.write(b"ok")
+            probe.flush()
         checks.append({"check": "storage", "status": "ok", "path": str(storage)})
     except OSError:
         checks.append({"check": "storage", "status": "failed", "detail": "Storage is not writable"})
     for variable in ("EDGAR_IDENTITY", "OPENAI_API_KEY"):
         checks.append({"check": variable, "configured": "yes" if os.getenv(variable) else "no"})
-    checks.append({"check": "recipient", "configured": "yes" if config["email"].get("recipient") else "no"})
-    checks.append({"check": "sender", "configured": "yes" if config["email"].get("sender") else "no"})
     checks.append({"check": "optional_ai", "enabled": bool(config["ai"].get("enabled", False)), "sdk_installed": importlib.util.find_spec("openai") is not None,
                    "detail": "Evidence-only reports remain available without AI."})
     if not offline:
@@ -116,7 +118,19 @@ def doctor(config, *, offline=False):
         checks.append({"check": "network", "status": "not_tested", "detail": "Offline doctor requested."})
     from .delivery import doctor_email
     checks.extend(doctor_email(config))
-    return {"checks": checks, "live_delivery": "not_tested_by_doctor", "schedule": "activation_is_separate"}
+    return {"status": "failed" if any(_doctor_check_failed(check) for check in checks) else "ok",
+            "checks": checks, "live_delivery": "not_tested_by_doctor", "schedule": "activation_is_separate"}
+
+
+def _doctor_check_failed(check):
+    """Report failed probes, keeping disabled issuers and optional setup informational."""
+    if check.get("enabled") is False:
+        return False
+    failures = {"failed", "error", "blocked", "blocked_lock", "blocked_rate_configuration",
+                "dependency_missing", "not_found", "unexpected_status", "not_configured"}
+    if check.get("status") in failures or check.get("access_status") in failures:
+        return True
+    return any(_doctor_check_failed(value) for value in check.values() if isinstance(value, dict))
 
 
 def parser():
@@ -137,6 +151,10 @@ def parser():
     reconcile.add_argument("--message-key", required=True)
     reconcile.add_argument("--decision", choices=("accepted", "retry"), required=True)
     reconcile.add_argument("--detail", default="", help="Optional note describing the provider check")
+    repair = commands.add_parser("repair-paths", help="Inspect verified archive and report paths after moving storage; never sends")
+    repair.add_argument("--from-root", required=True, help="Previous absolute project or storage root")
+    repair.add_argument("--to-root", required=True, help="Current absolute root containing the unchanged files")
+    repair.add_argument("--apply", action="store_true", help="Back up state and apply verified path changes; default is inspection")
     commands.add_parser("status", help="Read local collection, briefing, delivery and schedule status")
     return result
 
@@ -144,11 +162,16 @@ def parser():
 def main(argv=None):
     args = parser().parse_args(argv)
     config_error_type = _config_error_type()
+    logging_handler = None
     try:
         config = load_config(args.config)
         storage = Path(config["_storage"])
-        configure_logging(storage)
-        if args.command == "doctor":
+        if args.command != "repair-paths":
+            logging_handler = configure_logging(storage)
+        if args.command == "repair-paths":
+            from .path_repair import repair_paths
+            response = repair_paths(storage / "state.sqlite3", args.from_root, args.to_root, apply=args.apply)
+        elif args.command == "doctor":
             response = doctor(config, offline=args.offline)
         elif args.command == "status":
             state = _state_type()(storage / "state.sqlite3")
@@ -194,6 +217,10 @@ def main(argv=None):
         # Deliberately avoid arbitrary exception text from external transports.
         print(json.dumps({"status": "failed", "error_type": type(exc).__name__, "detail": "Check configuration, doctor and local state/logs. No success has been recorded for this operation."}), file=sys.stderr)
         return 2
+    finally:
+        if logging_handler is not None:
+            logging.getLogger("servicing_brief").removeHandler(logging_handler)
+            logging_handler.close()
 
 
 if __name__ == "__main__":

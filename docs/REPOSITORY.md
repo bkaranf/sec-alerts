@@ -16,6 +16,14 @@
 
 ## Reviewed rendering
 
+`servicing_brief.archive_paths` provides pure, explicit root mapping and hash
+verification for document snapshots and analysis catalogs. It returns copies
+without rewriting historical manifests or relaxing analysis proof requirements.
+`servicing_brief.path_repair` plans and applies verified database-pointer repairs
+under collection and delivery locks, with an original-state backup and audit
+record. The CLI defaults to read-only inspection and does not initialize State
+or logging for this command.
+
 `servicing_brief.review_rendering` owns the reusable editorial renderer. Its
 `templates/review_email.html.j2` template is distributed inside the Python
 package. `tools/build_company_briefs.py` uses the package implementation.

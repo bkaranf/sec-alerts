@@ -11,11 +11,13 @@ from pathlib import Path
 import pytest
 
 from servicing_brief.models import Document
+from servicing_brief.archive_paths import ArchivePathMap
 from servicing_brief.reviewed_context import select_context
 
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "data" / "live-collection-tfc-pfsi-corrected.json"
+ARCHIVE_ORIGINAL_ROOT = r"C:\Users\bkara\OneDrive\Documents\ChatGPT\SEC Alerts"
 
 
 def _pfsi_documents() -> list[Document]:
@@ -31,9 +33,19 @@ def _pfsi_documents() -> list[Document]:
         and row.get("period") == "2026-Q2"
         and row.get("kind") in {"presentation", "10-Q"}
     ]
-    if not documents or any(not Path(doc.path).is_file() for doc in documents):
+    # Historical manifests retain their original paths as evidence. Recover
+    # this known project move in memory, only when the archived hashes match.
+    mapping = ArchivePathMap(ARCHIVE_ORIGINAL_ROOT, ROOT)
+    mapped = [mapping.document(doc) for doc in documents]
+    unresolved = [
+        resolution
+        for _, resolutions in mapped for resolution in resolutions
+        if resolution["status"] == "unresolved"
+    ]
+    if not documents or any(item["reason"] == "mapped_missing" for item in unresolved):
         pytest.skip("source-worker PFSI Q2 archive is unavailable")
-    return documents
+    assert not unresolved, "Archived PFSI source integrity could not be verified"
+    return [doc for doc, _ in mapped]
 
 
 def _entry_ids(items: list[dict]) -> set[str]:
