@@ -27,9 +27,10 @@ def period_order(period: str):
     return (int(match[1]), int(match[3] or 4)) if match else (0, 0)
 
 
-def select_updates(documents: list[Document], covered: set[str], baselined: set[str]):
+def select_updates(documents: list[Document], covered: set[str], baselined: set[str], *, recovered: set[str] | None = None):
     """First coverage is one latest package per issuer, with previous docs kept for comparisons."""
     selected, historical = [], []
+    recovered = recovered or set()
     latest = {}
     for doc in documents:
         latest[doc.cik] = max(latest.get(doc.cik, (0, 0)), period_order(doc.period))
@@ -40,13 +41,13 @@ def select_updates(documents: list[Document], covered: set[str], baselined: set[
     for doc in documents:
         if doc.id in covered:
             continue
-        previous_version = any(old.cik == doc.cik and old.url == doc.url and old.id in covered and old.content_hash != doc.content_hash for old in documents)
+        previous_version = any(old.cik == doc.cik and old.url == doc.url and old.id in covered and old.id != doc.id for old in documents)
         amendment = doc.kind.upper().endswith("/A") or bool(re.search(r"amend|restat|corrected|revision", doc.title, re.I))
         old_period = period_order(doc.period) not in ((0, 0), latest[doc.cik])
         old_publication = not doc.published or doc.published[:10] <= latest_event_dates.get(doc.cik, "")
-        if doc.cik in baselined and old_period and old_publication and not amendment and not previous_version:
+        if doc.cik in baselined and old_period and old_publication and not amendment and not previous_version and doc.id not in recovered:
             # Later acquisition of an old comparison document is backfill,
-            # while actual amendments, revisions and newer publications alert.
+            # while amendments, revisions and recovered pending work alert.
             historical.append(doc)
             continue
         if doc.cik not in baselined and period_order(doc.period) not in ((0, 0), latest[doc.cik]):
@@ -105,7 +106,7 @@ def _run_locked(config, *, bootstrap=False, send=False, offline=False, collector
         all_documents = state.documents()
         enabled = {c["cik"] for c in config["companies"] if c.get("enabled")}
         documents = [d for d in all_documents if d.cik in enabled and not d.metadata.get("exclude_from_reporting")]
-        updates, historical = select_updates(documents, state.covered_ids(), state.baseline_ciks())
+        updates, historical = select_updates(documents, state.covered_ids(), state.baseline_ciks(), recovered=state.recovered_ids())
         with state.db:
             state.db.executemany("INSERT OR IGNORE INTO historical_documents VALUES(?)", [(d.id,) for d in historical])
         outputs = []

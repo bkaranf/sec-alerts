@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+from dataclasses import replace
 import sys
 import types
 from datetime import datetime, timedelta, timezone
@@ -76,6 +77,46 @@ def test_collector_deduplicates_by_cik_not_shared_cdn_url(tmp_path, monkeypatch)
     result = collector_module.collect(_config(tmp_path))
 
     assert {document.cik for document in result.documents} == {"0000092230", "0001745916"}
+
+
+def test_collector_preserves_same_wrapper_variants_with_different_assets(tmp_path, monkeypatch):
+    wrapper = tmp_path / "deck.html"
+    wrapper.write_bytes(b"<html><img src='slide.png'></html>")
+    slide_a = tmp_path / "slide-a.png"
+    slide_b = tmp_path / "slide-b.png"
+    slide_a.write_bytes(b"slide A")
+    slide_b.write_bytes(b"slide B")
+    base = Document(
+        issuer="TFC",
+        cik="0000092230",
+        title="Earnings presentation",
+        kind="presentation",
+        source="ir",
+        url="https://cdn.example.test/deck.html",
+        published="2026-07-29",
+        period="2026-Q2",
+        path=str(wrapper),
+        content_hash=sha256(wrapper.read_bytes()).hexdigest(),
+        metadata={"ticker": "TFC", "assets": []},
+    )
+    first = replace(base, metadata={"ticker": "TFC", "assets": [{
+        "document": "slide.png", "path": str(slide_a), "content_hash": sha256(slide_a.read_bytes()).hexdigest()
+    }]})
+    second = replace(base, metadata={"ticker": "TFC", "assets": [{
+        "document": "slide.png", "path": str(slide_b), "content_hash": sha256(slide_b.read_bytes()).hexdigest()
+    }]})
+
+    monkeypatch.setattr(collector_module, "discover_sec", lambda *_args, **_kwargs: SourceResult(documents=[first], checked=["TFC"]))
+    monkeypatch.setattr(collector_module, "discover_ir", lambda *_args, **_kwargs: SourceResult(documents=[second], checked=["TFC"]))
+
+    config = _config(tmp_path)
+    config["companies"] = [{"ticker": "TFC", "cik": "0000092230", "enabled": True}]
+    result = collector_module.collect(config)
+
+    assert len(result.documents) == 2
+    assert {document.metadata["assets"][0]["content_hash"] for document in result.documents} == {
+        sha256(b"slide A").hexdigest(), sha256(b"slide B").hexdigest()
+    }
 
 
 class _Attachment:

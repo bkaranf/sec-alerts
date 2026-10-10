@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import replace
+from hashlib import sha256
 import json
 from pathlib import Path
 
@@ -130,3 +131,75 @@ def test_context_rejects_changed_reviewed_asset_and_does_not_inherit_future_or_o
     assert _entry_ids(select_context(ten_q_revision_documents, cik="1745916", period="2026-Q2")) == {
         "pfsi-q226-retention"
     }
+
+
+def test_context_requires_bundle_fingerprint_or_specific_intact_asset_hash(tmp_path: Path) -> None:
+    wrapper = tmp_path / "presentation.html"
+    wrapper.write_bytes(b"presentation")
+    slide_a = tmp_path / "slide-a.png"
+    slide_b = tmp_path / "slide-b.png"
+    slide_a.write_bytes(b"slide a")
+    slide_b.write_bytes(b"slide b")
+    assets = [
+        {"document": "slide-a.png", "path": str(slide_a), "content_hash": sha256(slide_a.read_bytes()).hexdigest()},
+        {"document": "slide-b.png", "path": str(slide_b), "content_hash": sha256(slide_b.read_bytes()).hexdigest()},
+    ]
+    document = Document(
+        issuer="PennyMac Financial Services",
+        cik="0001745916",
+        title="Presentation",
+        kind="presentation",
+        source="ir",
+        url="https://issuer.example/presentation",
+        published="2026-08-01",
+        period="2026-Q2",
+        path=str(wrapper),
+        content_hash=sha256(wrapper.read_bytes()).hexdigest(),
+        metadata={"ticker": "PFSI", "assets": assets},
+    )
+    from servicing_brief.document_identity import content_fingerprint
+
+    fingerprint_catalog = tmp_path / "fingerprint.json"
+    fingerprint_catalog.write_text(json.dumps({"entries": [{
+        "id": "exact", "cik": "0001745916", "report_period": "2026-Q2", "text": "exact", "sources": [{
+            "content_hash": document.content_hash, "content_fingerprint": content_fingerprint(document),
+            "period": "2026-Q2", "kind": "presentation", "location": "slide 1",
+        }],
+    }]}), encoding="utf-8")
+    assert _entry_ids(select_context([document], cik="1745916", period="2026-Q2", catalog_path=fingerprint_catalog)) == {"exact"}
+
+    wrapper_only_catalog = tmp_path / "wrapper-only.json"
+    wrapper_only_catalog.write_text(json.dumps({"entries": [{
+        "id": "stale", "cik": "0001745916", "report_period": "2026-Q2", "text": "stale", "sources": [{
+            "content_hash": document.content_hash, "period": "2026-Q2", "kind": "presentation", "location": "slide 1",
+        }],
+    }]}), encoding="utf-8")
+    assert select_context([document], cik="1745916", period="2026-Q2", catalog_path=wrapper_only_catalog) == []
+
+    cited_catalog = tmp_path / "cited.json"
+    cited_catalog.write_text(json.dumps({"entries": [{
+        "id": "cited", "cik": "0001745916", "report_period": "2026-Q2", "text": "cited", "sources": [{
+            "content_hash": document.content_hash, "period": "2026-Q2", "kind": "presentation", "location": "slide 1",
+            "asset_hashes": [assets[0]["content_hash"]],
+        }],
+    }]}), encoding="utf-8")
+    slide_b.write_bytes(b"changed unrelated slide")
+    assert _entry_ids(select_context([document], cik="1745916", period="2026-Q2", catalog_path=cited_catalog)) == {"cited"}
+    slide_a.write_bytes(b"changed cited slide")
+    assert select_context([document], cik="1745916", period="2026-Q2", catalog_path=cited_catalog) == []
+
+    # An explicitly supplied malformed or conflicting fingerprint must not
+    # fall back to an otherwise valid claim-level asset hash.
+    slide_a.write_bytes(b"slide a")
+    invalid = json.loads(cited_catalog.read_text(encoding="utf-8"))
+    invalid["entries"][0]["sources"][0]["content_fingerprint"] = "malformed"
+    invalid_path = tmp_path / "invalid-fingerprint.json"
+    invalid_path.write_text(json.dumps(invalid), encoding="utf-8")
+    assert select_context([document], cik="1745916", period="2026-Q2", catalog_path=invalid_path) == []
+
+    conflicting = json.loads(cited_catalog.read_text(encoding="utf-8"))
+    conflicting["entries"][0]["sources"][0]["content_fingerprint"] = "0" * 64
+    conflicting["entries"][0]["sources"][0]["fingerprint"] = "1" * 64
+    conflicting_path = tmp_path / "conflicting-fingerprint.json"
+    conflicting_path.write_text(json.dumps(conflicting), encoding="utf-8")
+    assert select_context([document], cik="1745916", period="2026-Q2", catalog_path=conflicting_path) == []

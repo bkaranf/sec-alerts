@@ -19,6 +19,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from .company_boundary import canonical_event, normalize_cik, normalize_ticker
+from .document_identity import asset_manifest, content_fingerprint, verify_document_assets
 
 
 ANALYSIS_SCHEMA_VERSION = 1
@@ -26,6 +27,7 @@ ANALYSIS_PROMPT_VERSION = "servicing-brief-analysis-v1"
 DEFAULT_GUIDE_NAME = "PUBLIC_VOICE.md"
 
 _SOURCE_HASH_FIELDS = ("archive_sha256", "sha256", "content_hash", "hash")
+_SOURCE_FINGERPRINT_FIELDS = ("content_fingerprint", "fingerprint")
 _SOURCE_PATH_FIELDS = ("archive_path", "source_path", "path")
 _SOURCE_URL_FIELDS = ("source_url", "url")
 _SUPPORT_KINDS = {
@@ -145,6 +147,30 @@ def _source_hash(record: Mapping[str, Any], where: str) -> str:
     return value.lower()
 
 
+def _source_fingerprint(record: Mapping[str, Any], where: str, *, required: bool = False) -> str:
+    """Read the optional complete-bundle proof from a source record.
+
+    ``content_fingerprint`` is the canonical spelling.  ``fingerprint`` is
+    accepted as a compatibility alias for hand-authored catalogs, but two
+    disagreeing aliases fail closed just like the wrapper hash aliases.
+    """
+
+    value = _alias_value(
+        record,
+        _SOURCE_FINGERPRINT_FIELDS,
+        "content fingerprint",
+        where,
+        required=required,
+    )
+    if not value:
+        return ""
+    if not _SHA256.fullmatch(value):
+        raise AnalysisValidationError(
+            f"{where}.content_fingerprint must be a 64-character SHA-256 value"
+        )
+    return value.lower()
+
+
 def _source_path(record: Mapping[str, Any], where: str) -> str:
     return _alias_value(record, _SOURCE_PATH_FIELDS, "source path", where, required=True)
 
@@ -201,14 +227,40 @@ def _document_for_source(
     archive_hash: str,
     archive_path: Path,
     source_url: str,
+    source_fingerprint: str,
     where: str,
     base_dir: Path | None,
     hash_cache: dict[Path, str],
 ) -> Any:
     candidates = []
+    bundle_variant_seen = False
     for document in documents:
         if not _document_matches_identity(document, expected) or _document_hash(document) != archive_hash:
             continue
+        # Only variants that could satisfy this source proof participate in
+        # the bundle-revision check.  A same-wrapper document from another
+        # URL, kind, or reporting period must not make an otherwise valid
+        # wrapper-only source look stale.  Keep same-URL older wrapper-only
+        # copies in scope so a complete newer bundle cannot be bypassed by a
+        # legacy copy supplied alongside it.
+        document_url = str(_field(document, "url", "") or "").strip()
+        if document_url and document_url != source_url:
+            continue
+        if source.get("kind") not in (None, "") and str(_field(document, "kind", "") or "").strip() != str(source["kind"]).strip():
+            continue
+        if source.get("period") not in (None, "") and _document_period(document):
+            if _normalised_period(source["period"], f"{where}.period") != _normalised_period(_document_period(document), f"{where}.document_period"):
+                continue
+        try:
+            manifest = asset_manifest(document)
+        except (TypeError, ValueError, KeyError):
+            # A malformed asset manifest cannot prove the identity of an
+            # analysis source and must never be treated as a wrapper-only
+            # match.
+            bundle_variant_seen = True
+            continue
+        if manifest:
+            bundle_variant_seen = True
         document_path_value = str(_field(document, "path", "") or "").strip()
         if document_path_value:
             document_path = _resolve_path(document_path_value, base_dir)
@@ -220,7 +272,29 @@ def _document_for_source(
                 hash_cache[document_path] = document_actual_hash
             if document_actual_hash != _document_hash(document):
                 continue
+        if manifest:
+            # Existing shipped catalogs often contain only the wrapper hash.
+            # They are intentionally stale once the matching exhibit carries
+            # image assets.  Fresh authorship must include the complete
+            # bundle fingerprint, or this source cannot be selected.
+            if not source_fingerprint:
+                continue
+            try:
+                verify_document_assets(document)
+            except (OSError, TypeError, ValueError):
+                continue
+        if source_fingerprint:
+            try:
+                if content_fingerprint(document) != source_fingerprint:
+                    continue
+            except (TypeError, ValueError, KeyError):
+                continue
         candidates.append(document)
+    if bundle_variant_seen and not source_fingerprint:
+        # Do not let an old wrapper-only copy in the supplied list satisfy a
+        # stale catalog when a matching asset-bearing revision is present.
+        # Fresh analysis must bind the complete bundle explicitly.
+        candidates = []
     if source.get("document_id") not in (None, ""):
         document_id = str(source["document_id"])
         candidates = [document for document in candidates if str(_field(document, "id", "")) == document_id]
@@ -277,7 +351,22 @@ def _validate_source(
         hash_cache[archive_path] = actual_hash
     if actual_hash.lower() != archive_hash:
         raise AnalysisValidationError(f"{section_where}.archive_sha256 does not match archive_path")
-    document = _document_for_source(raw, documents, expected, archive_hash, archive_path, source_url, section_where, base_dir, hash_cache)
+    # A complete bundle proof is mandatory when the matching archived
+    # document has related assets.  The candidate lookup enforces that
+    # requirement without stamping a fingerprint into old catalogs.
+    source_fingerprint = _source_fingerprint(raw, section_where)
+    document = _document_for_source(
+        raw,
+        documents,
+        expected,
+        archive_hash,
+        archive_path,
+        source_url,
+        source_fingerprint,
+        section_where,
+        base_dir,
+        hash_cache,
+    )
     document_url = str(_field(document, "url", "") or "").strip()
     if document_url and document_url != source_url:
         raise AnalysisValidationError(f"{section_where}.source_url does not match the archived document")
@@ -300,6 +389,7 @@ def _validate_source(
         "location": location,
         "archive_path": archive_path_text,
         "archive_sha256": archive_hash,
+        **({"content_fingerprint": source_fingerprint} if source_fingerprint else {}),
         "document_id": document_id,
         "period": document_period,
         "kind": supplied_kind or document_kind,
@@ -581,6 +671,16 @@ def build_analysis_prompt(
     facts = tuple(evidence)
     comments = tuple(commentary)
     document_records = _validate_prompt_packet(docs, expected, "DOCUMENTS")
+    # Give a fresh author the exact complete-bundle proof whenever a supplied
+    # document carries related assets.  This is prompt-packet enrichment for
+    # new authorship, never mutation or backfilling of an existing catalog.
+    for index, (document, record) in enumerate(zip(docs, document_records)):
+        try:
+            manifest = asset_manifest(document)
+            if manifest:
+                record["content_fingerprint"] = content_fingerprint(document)
+        except (TypeError, ValueError, KeyError) as exc:
+            raise AnalysisValidationError(f"DOCUMENTS[{index}] has an invalid asset manifest") from exc
     evidence_records = _validate_prompt_packet(facts, expected, "EVIDENCE")
     commentary_records = _validate_prompt_packet(comments, expected, "COMMENTARY")
     guide = _guide_path(guide_path).read_text(encoding="utf-8")
@@ -603,6 +703,7 @@ def build_analysis_prompt(
                 "source_url": "https://issuer.example/source",
                 "archive_path": "path/to/archive",
                 "archive_sha256": "64-character hash from DOCUMENTS",
+                "content_fingerprint": "64-character complete-bundle hash when DOCUMENTS declares assets",
                 "location": "page, slide, section or transcript timestamp",
             }
         ],
@@ -617,6 +718,7 @@ def build_analysis_prompt(
                         "source_url": "https://issuer.example/source",
                         "archive_path": "path/to/archive",
                         "archive_sha256": "64-character hash from DOCUMENTS",
+                        "content_fingerprint": "64-character complete-bundle hash when DOCUMENTS declares assets",
                         "location": "page, slide, section or transcript timestamp",
                     }
                 ],
@@ -645,6 +747,9 @@ def build_analysis_prompt(
         "inferences, keep their limits beside them, and cite every paragraph with exact source proofs. "
         "List every reviewed event source in source_manifest, including a source that adds no paragraph "
         "claim. The source_manifest is internal provenance and is never rendered as reader-facing text. "
+        "When a supplied document declares related assets, copy its exact content_fingerprint into every "
+        "source proof that cites it. A wrapper archive_sha256 alone cannot establish the complete bundle "
+        "identity, and the validator will reject that stale proof. "
         "Return one complete JSON catalog matching this shape. The validator checks every archive byte "
         "and rejects the entire catalog if any section or proof fails, so do not return a partial essay. "
         "The text may contain full original paragraphs and is not required to equal a source quote.\n\n"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from hashlib import sha256
+from dataclasses import replace
 import json
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from servicing_brief.analysis import (
     validate_analysis,
 )
 from servicing_brief.evidence import Evidence
+from servicing_brief.document_identity import content_fingerprint
 from servicing_brief.models import Document
 
 
@@ -204,6 +206,65 @@ def test_wrong_company_or_event_is_empty_but_matching_stale_archive_fails_closed
         select_analysis(catalog, [revised], identity=IDENTITY, base_dir=tmp_path)
 
 
+def test_analysis_asset_bundle_requires_exact_fingerprint_and_intact_asset(tmp_path: Path) -> None:
+    document = _document(tmp_path)
+    asset_path = tmp_path / "slide.png"
+    asset_path.write_bytes(b"slide bytes")
+    document = replace(document, metadata={
+        "ticker": "PFSI",
+        "assets": [{
+            "document": "slide.png",
+            "path": str(asset_path),
+            "content_hash": sha256(asset_path.read_bytes()).hexdigest(),
+        }],
+    })
+    catalog = _catalog(document)
+    with pytest.raises(AnalysisValidationError, match="supplied archived document"):
+        validate_analysis(catalog, [document], identity=IDENTITY, base_dir=tmp_path)
+
+    legacy_wrapper = replace(document, metadata={"ticker": "PFSI", "assets": []})
+    with pytest.raises(AnalysisValidationError, match="supplied archived document"):
+        validate_analysis(catalog, [legacy_wrapper, document], identity=IDENTITY, base_dir=tmp_path)
+
+    catalog["sections"][0]["sources"][0]["content_fingerprint"] = content_fingerprint(document)
+    selected = validate_analysis(catalog, [document], identity=IDENTITY, base_dir=tmp_path)
+    assert selected["sections"][0]["sources"][0]["content_fingerprint"] == content_fingerprint(document)
+
+    asset_path.write_bytes(b"changed slide bytes")
+    with pytest.raises(AnalysisValidationError, match="supplied archived document"):
+        validate_analysis(catalog, [document], identity=IDENTITY, base_dir=tmp_path)
+
+
+def test_old_bundle_fingerprint_cannot_satisfy_fresh_required_asset_version(tmp_path: Path) -> None:
+    old = _document(tmp_path)
+    old_asset_path = tmp_path / "old-slide.png"
+    old_asset_path.write_bytes(b"old slide")
+    old = replace(old, id="", metadata={"ticker": "PFSI", "assets": [{
+        "document": "slide.png", "path": str(old_asset_path),
+        "content_hash": sha256(old_asset_path.read_bytes()).hexdigest(),
+    }]})
+    new_asset_path = tmp_path / "new-slide.png"
+    new_asset_path.write_bytes(b"new slide")
+    new = replace(old, id="", metadata={"ticker": "PFSI", "assets": [{
+        "document": "slide.png", "path": str(new_asset_path),
+        "content_hash": sha256(new_asset_path.read_bytes()).hexdigest(),
+    }]})
+    assert old.id != new.id
+    catalog = _catalog(old)
+    catalog["sections"][0]["sources"][0]["content_fingerprint"] = content_fingerprint(old)
+
+    with pytest.raises(AnalysisValidationError, match="required document"):
+        select_analysis(
+            catalog,
+            [old, new],
+            identity=IDENTITY,
+            base_dir=tmp_path,
+            required_document_ids={new.id},
+        )
+    with pytest.raises(AnalysisValidationError, match="supplied archived document"):
+        select_analysis(catalog, [new], identity=IDENTITY, base_dir=tmp_path)
+
+
 def test_required_document_freshness_rejects_old_essay_for_supporting_update(tmp_path: Path) -> None:
     document = _document(tmp_path)
     new_document = _document(tmp_path, name="release", content=b"new current release")
@@ -319,3 +380,21 @@ def test_prompt_rejects_mixed_company_records(tmp_path: Path) -> None:
     other = {**document.to_dict(), "cik": "0000000002", "metadata": {"ticker": "TFC"}}
     with pytest.raises(AnalysisValidationError, match="does not match requested company"):
         build_analysis_prompt(identity=IDENTITY, documents=[document, other], guide_path=tmp_path / "PUBLIC_VOICE.md")
+
+
+def test_prompt_exposes_complete_bundle_fingerprint_for_asset_document(tmp_path: Path) -> None:
+    document = _document(tmp_path)
+    asset_path = tmp_path / "slide.png"
+    asset_path.write_bytes(b"slide")
+    document = replace(document, metadata={
+        "ticker": "PFSI",
+        "assets": [{
+            "document": "slide.png",
+            "path": str(asset_path),
+            "content_hash": sha256(asset_path.read_bytes()).hexdigest(),
+        }],
+    })
+    guide = tmp_path / "PUBLIC_VOICE.md"
+    guide.write_text("# Guide\n", encoding="utf-8")
+    prompt = build_analysis_prompt(identity=IDENTITY, documents=[document], guide_path=guide)
+    assert content_fingerprint(document) in prompt

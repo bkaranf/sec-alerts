@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from servicing_brief.document_identity import content_fingerprint
 from servicing_brief.models import SourceResult
 
 from .ir import discover_ir, doctor_ir
@@ -77,9 +78,19 @@ def collect(
     # The same issuer CDN URL and bytes can legitimately appear in more than
     # one configured source record.  CIK is part of identity here; omitting it
     # can silently discard a second issuer's document before State sees it.
-    seen: set[tuple[str, str, str, str]] = set()
+    seen: set[tuple[str, str, str, str, str]] = set()
     for document in combined.documents:
-        key = (document.cik, document.source, document.url, document.content_hash)
+        # A wrapper's SHA is intentionally not the complete identity for an
+        # HTML exhibit.  The same wrapper can be rediscovered with an added,
+        # corrected, or removed local image.  Preserve each bundle variant so
+        # State can record the revision and decide whether it is a recovery or
+        # a new disclosure.  Malformed manifests are retained for State's
+        # quarantine path instead of being silently collapsed here.
+        try:
+            fingerprint = content_fingerprint(document)
+        except (TypeError, ValueError, KeyError):
+            fingerprint = f"invalid:{id(document)}"
+        key = (document.cik, document.source, document.url, document.content_hash, fingerprint)
         if key in seen:
             continue
         seen.add(key)

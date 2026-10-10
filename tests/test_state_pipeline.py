@@ -217,7 +217,13 @@ def test_reacquisition_does_not_replace_an_asset_with_corrupt_bytes(tmp_path):
     original = document(tmp_path)
     original.metadata = {"assets": [{"document": "slide.jpg", "path": str(tmp_path / "missing.jpg"),
                                     "content_hash": sha256(b"expected image").hexdigest()}]}
-    state.ingest(SourceResult(documents=[original]))
+    # Legacy releases could admit a wrapper with unverified declared assets.
+    # Preserve that history, but no new admission may repeat the mistake.
+    state.db.execute("INSERT INTO documents VALUES(?,?,?,?,?,?)", (original.id, original.cik, original.period,
+                     original.content_hash, json.dumps(original.to_dict()), original.retrieved))
+    state.db.commit()
+    state.close()
+    state = State(tmp_path / "state.sqlite3")
     corrupt = tmp_path / "corrupt.jpg"
     corrupt.write_bytes(b"other image")
     recovered = replace(original, metadata={"assets": [{**original.metadata["assets"][0], "path": str(corrupt)}]})
