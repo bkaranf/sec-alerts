@@ -24,6 +24,8 @@ uv run --extra sec servicing-brief doctor --offline
 
 All settings and the editable CIK-based watchlist are in `config.toml`. Credentials belong in environment variables; `.env.example` lists their names but is not automatically loaded. Python 3.12 is pinned. uv uses file copies because OneDrive can reject hard links.
 
+Configuration errors identify the setting to correct before collection starts. Use TOML booleans such as `enabled = false`, and a list of `HH:MM` strings for schedule times. A watchlist entry without an explicit `enabled = true` remains disabled.
+
 The `sec` extra supplies EdgarTools and its dependencies for full SEC and issuer monitoring. For offline reports, original-document packaging and email delivery, `uv sync --no-dev` installs the smaller base application. All report, evidence, branding and delivery controls remain available. SEC collection without the extra reports a setup failure; independent issuer collection continues. Add SEC support with `uv sync --extra sec`. Keep `--extra sec` on subsequent `uv run` commands so synchronization retains the monitoring dependencies. Installed wheels support the equivalent `mortgage-servicing-brief[sec]` extra.
 
 Set your own SEC identity before live discovery, for example through the Windows user environment editor. `EDGAR_IDENTITY` must contain your name and contact email in the format required by EdgarTools. The program reports only whether it is configured and never uses it as the email recipient.
@@ -98,7 +100,7 @@ The separate optional API feature selects additional cited source excerpts. It r
 
 ## Troubleshooting
 
-* `configuration_error`: copy the example TOML and review the indicated setting. Only one recipient is supported.
+* `configuration_error`: check the indicated setting or TOML syntax. Tables, booleans, numeric limits and schedule times are validated before execution. Only one recipient is supported.
 * SEC identity missing: configure `EDGAR_IDENTITY` in the environment used by PowerShell and scheduled tasks. Restart the shell after editing user environment variables.
 * Source blocked or missing document: consult `status`, the report coverage section and `brief.log`. The next run rechecks pending work with an overlap window. Do not bypass access controls.
 * No new disclosures: expected after unchanged runs. Existing previews remain in `data/reports`.

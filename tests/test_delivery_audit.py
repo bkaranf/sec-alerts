@@ -329,6 +329,172 @@ def test_html_bundle_rejects_duplicate_entry_names_and_normalizes_current_direct
         html_bundle({"path": str(source), "metadata": duplicate}, html)
 
 
+def _html_deck_document(
+    path: Path,
+    html: bytes,
+    image_name: str,
+    image_path: Path,
+    *,
+    url_suffix: str,
+    archive_name: str | None = None,
+) -> Document:
+    return Document(
+        issuer="TFC",
+        cik="0012345678",
+        title="Quarterly presentation",
+        kind="presentation",
+        source="ir",
+        url=f"https://investor.example/{url_suffix}",
+        published="2026-08-01T12:00:00+00:00",
+        period="2026-Q2",
+        path=str(path),
+        content_hash=hashlib.sha256(html).hexdigest(),
+        metadata={
+            "document": archive_name or path.name,
+            "ticker": "TFC",
+            "assets": [{
+                "document": image_name,
+                "path": str(image_path),
+                "content_hash": hashlib.sha256(image_path.read_bytes()).hexdigest(),
+            }],
+        },
+    )
+
+
+def test_load_attachments_validates_html_images_with_empty_assets_and_keeps_plain_fallback(tmp_path: Path) -> None:
+    html = b'<html><body><img src="slide.jpg"></body></html>'
+    source = tmp_path / "deck.htm"
+    source.write_bytes(html)
+    document = Document(
+        issuer="TFC",
+        cik="0012345678",
+        title="Quarterly presentation",
+        kind="presentation",
+        source="ir",
+        url="https://investor.example/deck.htm",
+        published="2026-08-01T12:00:00+00:00",
+        period="2026-Q2",
+        path=str(source),
+        content_hash=hashlib.sha256(html).hexdigest(),
+        metadata={"document": "deck.htm", "ticker": "TFC", "assets": []},
+    )
+
+    attachments, omissions = delivery._load_attachments([document])
+
+    assert len(attachments) == 1
+    assert attachments[0].data == html
+    assert attachments[0].mime_type == "text/html"
+    assert any("Complete HTML/image bundle unavailable" in row["reason"] for row in omissions)
+
+
+def test_load_attachments_preserves_distinct_image_decks_with_identical_html(tmp_path: Path) -> None:
+    html = b'<html><body><img src="slide.jpg"></body></html>'
+    source_one = tmp_path / "one.htm"
+    source_two = tmp_path / "two.htm"
+    image_one = tmp_path / "one.jpg"
+    image_two = tmp_path / "two.jpg"
+    for path in (source_one, source_two):
+        path.write_bytes(html)
+    image_one.write_bytes(b"first deck image")
+    image_two.write_bytes(b"second deck image")
+    first = _html_deck_document(source_one, html, "slide.jpg", image_one, url_suffix="one.htm")
+    second = _html_deck_document(source_two, html, "slide.jpg", image_two, url_suffix="two.htm")
+
+    attachments, omissions = delivery._load_attachments([first, second])
+
+    assert omissions == []
+    assert len(attachments) == 2
+    packaged_images = []
+    for attachment in attachments:
+        assert attachment.mime_type == "application/zip"
+        with ZipFile(BytesIO(attachment.data)) as bundle:
+            assert bundle.read(attachment.document.metadata["document"]) == html
+            packaged_images.append(bundle.read("slide.jpg"))
+    assert sorted(packaged_images) == [b"first deck image", b"second deck image"]
+
+
+def test_load_attachments_collapses_identical_completed_html_bundles(tmp_path: Path) -> None:
+    html = b'<html><body><img src="slide.jpg"></body></html>'
+    source_one = tmp_path / "one.htm"
+    source_two = tmp_path / "two.htm"
+    image_one = tmp_path / "one.jpg"
+    image_two = tmp_path / "two.jpg"
+    source_one.write_bytes(html)
+    source_two.write_bytes(html)
+    image_one.write_bytes(b"same deck image")
+    image_two.write_bytes(b"same deck image")
+    first = _html_deck_document(
+        source_one, html, "slide.jpg", image_one, url_suffix="one.htm", archive_name="deck.htm"
+    )
+    second = _html_deck_document(
+        source_two, html, "slide.jpg", image_two, url_suffix="two.htm", archive_name="deck.htm"
+    )
+
+    attachments, omissions = delivery._load_attachments([first, second])
+
+    assert omissions == []
+    assert len(attachments) == 1
+    with ZipFile(BytesIO(attachments[0].data)) as bundle:
+        assert bundle.read("slide.jpg") == b"same deck image"
+
+
+def test_prepare_messages_exposes_incomplete_html_bundle_in_both_mime_alternatives(
+    tmp_path: Path,
+) -> None:
+    html = b'<html><body><img src="missing-slide.jpg"></body></html>'
+    source = tmp_path / "deck.htm"
+    source.write_bytes(html)
+    document = Document(
+        issuer="TFC",
+        cik="0012345678",
+        title="Quarterly presentation",
+        kind="presentation",
+        source="ir",
+        url="https://investor.example/deck.htm",
+        published="2026-08-01T12:00:00+00:00",
+        period="2026-Q2",
+        path=str(source),
+        content_hash=hashlib.sha256(html).hexdigest(),
+        metadata={"document": "deck.htm", "ticker": "TFC", "assets": []},
+    )
+
+    path = delivery.prepare_messages(_config(), _report(), [document], tmp_path / "preview")[0]
+    message = BytesParser(policy=policy.default).parsebytes(path.read_bytes())
+    plain = message.get_body(preferencelist=("plain",)).get_content()
+    rendered_html = message.get_body(preferencelist=("html",)).get_content()
+
+    for body in (plain, rendered_html):
+        assert "Attachment omissions" in body
+        assert "Complete HTML/image bundle unavailable" in body
+        assert "https://investor.example/deck.htm" in body
+
+
+def test_prepare_messages_retains_distinct_completed_html_bundles(tmp_path: Path) -> None:
+    html = b'<html><body><img src="slide.jpg"></body></html>'
+    source_one = tmp_path / "one.htm"
+    source_two = tmp_path / "two.htm"
+    image_one = tmp_path / "one.jpg"
+    image_two = tmp_path / "two.jpg"
+    source_one.write_bytes(html)
+    source_two.write_bytes(html)
+    image_one.write_bytes(b"first deck image")
+    image_two.write_bytes(b"second deck image")
+    first = _html_deck_document(source_one, html, "slide.jpg", image_one, url_suffix="one.htm")
+    second = _html_deck_document(source_two, html, "slide.jpg", image_two, url_suffix="two.htm")
+
+    path = delivery.prepare_messages(_config(), _report(), [first, second], tmp_path / "preview")[0]
+    message = BytesParser(policy=policy.default).parsebytes(path.read_bytes())
+    attachments = list(message.iter_attachments())
+
+    assert len(attachments) == 2
+    packaged_images = []
+    for attachment in attachments:
+        assert attachment.get_content_type() == "application/zip"
+        with ZipFile(BytesIO(attachment.get_payload(decode=True))) as bundle:
+            packaged_images.append(bundle.read("slide.jpg"))
+    assert sorted(packaged_images) == [b"first deck image", b"second deck image"]
+
+
 def _schedule_config(**overrides) -> dict:
     schedule = {
         "enabled": True,

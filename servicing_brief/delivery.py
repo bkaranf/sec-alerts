@@ -404,7 +404,10 @@ def _load_attachments(documents: Iterable[Any]) -> tuple[list[_Attachment], list
 
     attachments: list[_Attachment] = []
     omissions: list[dict[str, str]] = []
-    seen: set[str] = set()
+    # Deduplicate only after an HTML original has been expanded into its
+    # verified bundle.  Two decks can share identical wrapper HTML while
+    # carrying different local images, so source-byte dedupe is too early.
+    seen_payloads: set[str] = set()
     for document in sorted(documents, key=_attachment_priority):
         path_value = str(_field(document, "path", "") or "")
         url = str(_field(document, "url", "") or "")
@@ -458,26 +461,34 @@ def _load_attachments(documents: Iterable[Any]) -> tuple[list[_Attachment], list
             )
             continue
         document_id = _document_id(document, content_hash, url, path_value)
-        dedupe_key = expected_hash or content_hash
-        if dedupe_key in seen:
-            # Duplicate source rows are retained in collection state but only
-            # one original copy is attached to an email package.
-            continue
-        seen.add(dedupe_key)
         filename = _document_filename(document, path)
         mime_type = _mime_type(document, path)
         metadata = _field(document, "metadata", {})
-        if path.suffix.lower() in {".html", ".htm"} and metadata.get("assets"):
+        if not isinstance(metadata, Mapping):
+            metadata = {}
+        if path.suffix.lower() in {".html", ".htm"}:
             try:
-                from .document_copies import html_bundle
-                path, data = html_bundle(document, data)
-                filename = Path(filename).stem + "-html-with-assets.zip"
-                mime_type = "application/zip"
-                content_hash = hashlib.sha256(data).hexdigest()
-                path_value = str(path)
+                from .document_copies import html_bundle, html_requires_bundle
+
+                # Validate image references even when metadata.assets is an
+                # empty list.  An incomplete bundle falls back to the exact
+                # archived HTML and records the existing honest omission.
+                if metadata.get("assets") or html_requires_bundle(data):
+                    path, data = html_bundle(document, data)
+                    filename = Path(filename).stem + "-html-with-assets.zip"
+                    mime_type = "application/zip"
+                    content_hash = hashlib.sha256(data).hexdigest()
+                    path_value = str(path)
             except (OSError, ValueError, KeyError) as exc:
                 omissions.append({"label": label, "url": url, "local_path": path_value,
                                   "reason": "Complete HTML/image bundle unavailable; archived HTML attached with source link (" + type(exc).__name__ + ")"})
+        # The final MIME payload is the identity of an attachment.  This keeps
+        # identical complete bundles compact while preserving decks whose
+        # wrapper HTML is equal but whose packaged image bytes differ.
+        payload_hash = hashlib.sha256(data).hexdigest()
+        if payload_hash in seen_payloads:
+            continue
+        seen_payloads.add(payload_hash)
         attachments.append(
             _Attachment(
                 document=document,
