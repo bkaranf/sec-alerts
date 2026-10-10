@@ -41,6 +41,29 @@ def test_due_catches_up_newest_missed_slot_without_historical_flood(tmp_path: Pa
     assert slots[0]["catch_up"] is True
 
 
+def test_repeated_hour_uses_elapsed_time_and_runs_only_once(tmp_path: Path) -> None:
+    state = tmp_path / "state.sqlite"
+    config = _config(times=["01:45"], catch_up=False)
+    # First 01:30 EDT is before the slot. Second 01:30 EST is after it.
+    assert due(config, state, now=datetime(2026, 11, 1, 5, 30, tzinfo=timezone.utc)) == []
+    slots = due(config, state, now=datetime(2026, 11, 1, 6, 30, tzinfo=timezone.utc))
+    assert len(slots) == 1
+    assert slots[0]["scheduled_utc"] == "2026-11-01T05:45:00+00:00"
+    assert slots[0]["catch_up"] is True
+    mark_handled(state, slots[0])
+    assert due(config, state, now=datetime(2026, 11, 1, 6, 45, tzinfo=timezone.utc)) == []
+
+
+def test_skipped_spring_hour_is_not_shifted_into_a_different_slot(tmp_path: Path) -> None:
+    slots = due(
+        _config(times=["02:30", "03:30"], catch_up=False),
+        tmp_path / "state.sqlite",
+        now=datetime(2026, 3, 8, 7, 45, tzinfo=timezone.utc),
+    )
+    assert [slot["local_time"] for slot in slots] == ["03:30"]
+    assert slots[0]["scheduled_utc"] == "2026-03-08T07:30:00+00:00"
+
+
 def test_scheduled_run_marks_only_success_and_prevents_overlap(tmp_path: Path) -> None:
     state = tmp_path / "state.sqlite"
     now = datetime(2026, 9, 4, 23, 30, tzinfo=timezone.utc)

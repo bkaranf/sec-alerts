@@ -6,6 +6,40 @@ from pathlib import Path
 from .models import Document, utcnow
 
 
+def _archive_intact(path, expected_hash):
+    try:
+        with Path(path).open("rb") as stream:
+            return hashlib.file_digest(stream, "sha256").hexdigest() == expected_hash
+    except OSError:
+        return False
+
+
+def _repair_archive_paths(original, recovered):
+    """Update only missing/corrupt local copies with verified identical bytes."""
+    identity_fields = ("id", "cik", "url", "content_hash")
+    if not all(original.get(key) == recovered.get(key) for key in identity_fields):
+        return
+    if (
+        original["path"] != recovered["path"]
+        and not _archive_intact(original["path"], original["content_hash"])
+    ):
+        if _archive_intact(recovered["path"], original["content_hash"]):
+            original["path"] = recovered["path"]
+    recovered_assets = {
+        (asset.get("document"), asset.get("content_hash")): asset
+        for asset in recovered.get("metadata", {}).get("assets", [])
+        if isinstance(asset, dict)
+    }
+    for asset in original.get("metadata", {}).get("assets", []):
+        replacement = recovered_assets.get((asset.get("document"), asset.get("content_hash")))
+        if replacement and asset.get("path") != replacement.get("path"):
+            if (
+                not _archive_intact(asset.get("path", ""), asset.get("content_hash"))
+                and _archive_intact(replacement.get("path", ""), asset.get("content_hash"))
+            ):
+                asset["path"] = replacement["path"]
+
+
 class State:
     def __init__(self, path: Path):
         self.path = Path(path)
@@ -33,11 +67,7 @@ class State:
         # Validate independently so one bad archive cannot discard other issuers.
         valid = []
         for doc in result.documents:
-            try:
-                intact = hashlib.sha256(Path(doc.path).read_bytes()).hexdigest() == doc.content_hash
-            except OSError:
-                intact = False
-            if intact:
+            if _archive_intact(doc.path, doc.content_hash):
                 valid.append(doc)
                 continue
             source_key = doc.metadata.get("source_key", f"{doc.metadata.get('ticker', doc.issuer)}:{doc.source}")
@@ -51,7 +81,17 @@ class State:
         result.documents = valid
         with self.db:
             for doc in result.documents:
-                self.db.execute("INSERT OR IGNORE INTO documents VALUES(?,?,?,?,?,?)", (doc.id, doc.cik, doc.period, doc.content_hash, json.dumps(doc.to_dict()), utcnow()))
+                existing = self.db.execute("SELECT payload FROM documents WHERE id=?", (doc.id,)).fetchone()
+                if existing:
+                    original = json.loads(existing["payload"])
+                    # Reacquisition repairs storage, not source chronology or
+                    # reviewed financial metadata. Rediscovery must not make an
+                    # older version look newer than a corrected disclosure.
+                    _repair_archive_paths(original, doc.to_dict())
+                    if json.dumps(original) != existing["payload"]:
+                        self.db.execute("UPDATE documents SET payload=? WHERE id=?", (json.dumps(original), doc.id))
+                else:
+                    self.db.execute("INSERT INTO documents VALUES(?,?,?,?,?,?)", (doc.id, doc.cik, doc.period, doc.content_hash, json.dumps(doc.to_dict()), utcnow()))
             for source, checkpoint in result.checkpoints.items():
                 self.db.execute("INSERT OR REPLACE INTO source_checkpoints VALUES(?,?)", (source, checkpoint))
             for error in result.errors:
@@ -68,6 +108,14 @@ class State:
 
     def documents(self) -> list[Document]:
         return [Document(**json.loads(row[0])) for row in self.db.execute("SELECT payload FROM documents ORDER BY first_seen,id")]
+
+    def restore_snapshot_paths(self, snapshot):
+        """Resolve local paths for a saved context document, retaining its evidence."""
+        restored = json.loads(json.dumps(snapshot))
+        row = self.db.execute("SELECT payload FROM documents WHERE id=?", (restored.get("id"),)).fetchone()
+        if row:
+            _repair_archive_paths(restored, json.loads(row["payload"]))
+        return restored
 
     def checkpoints(self) -> dict:
         return dict(self.db.execute("SELECT source,last_success FROM source_checkpoints"))
@@ -91,9 +139,22 @@ class State:
     def baseline_ciks(self) -> set[str]:
         return {row[0] for row in self.db.execute("SELECT cik FROM baseline_issuers")}
 
+    def next_report_id(self, identity_hash):
+        """Choose a new draft identity without overwriting durable history.
+
+        The pipeline holds its run lock through selection and save. Failed
+        preparation can reuse its unsaved identity; a withdrawn draft cannot.
+        """
+        report_id = identity_hash
+        revision = 0
+        while self.db.execute("SELECT 1 FROM briefings WHERE id=?", (report_id,)).fetchone():
+            revision += 1
+            report_id = hashlib.sha256(f"{identity_hash}|replacement:{revision}".encode()).hexdigest()[:24]
+        return report_id
+
     def save_report(self, report_id, report, documents, output_dir, baseline, historical=()):
         with self.db:
-            self.db.execute("INSERT OR IGNORE INTO briefings VALUES(?,?,?,?,?,?)", (report_id, utcnow(), int(baseline), "prepared", str(output_dir), json.dumps(report)))
+            self.db.execute("INSERT INTO briefings VALUES(?,?,?,?,?,?)", (report_id, utcnow(), int(baseline), "prepared", str(output_dir), json.dumps(report)))
             for doc in documents:
                 self.db.execute("INSERT OR IGNORE INTO briefing_documents VALUES(?,?)", (report_id, doc.id))
                 self.db.execute("INSERT OR IGNORE INTO baseline_issuers VALUES(?)", (doc.cik,))

@@ -1,5 +1,6 @@
 """Offline orchestration tests; source/report/transport fixtures are explicitly synthetic."""
 import json
+from dataclasses import replace
 import sys
 from types import ModuleType
 from pathlib import Path
@@ -281,3 +282,84 @@ def test_prepare_failure_remains_retryable(fixture_pipeline, monkeypatch):
     state.close()
     monkeypatch.setattr(module, "prepare_messages", original_prepare)
     assert run(config, collector=collect)["reports"]
+
+
+def test_withdrawn_drafts_are_replaced_without_overwriting_history(fixture_pipeline):
+    config, calls, doc = fixture_pipeline
+    release = doc("release")
+    collect = lambda *a, **k: SourceResult(documents=[release])
+    current = run(config, collector=collect)["reports"][0]
+    withdrawn = []
+    for _ in range(2):
+        output = Path(current["output"])
+        snapshot = {path.name: path.read_bytes() for path in output.iterdir() if path.is_file()}
+        state = State(Path(config["_storage"]) / "state.sqlite3")
+        state.withdraw_unsent_report(current["report_id"], "Synthetic review correction")
+        withdrawn.append((current["report_id"], output, snapshot))
+        state.close()
+        current = run(config, collector=collect)["reports"][0]
+        assert current["report_id"] not in {item[0] for item in withdrawn}
+        state = State(Path(config["_storage"]) / "state.sqlite3")
+        assert [row["id"] for row in state.outstanding()] == [current["report_id"]]
+        state.close()
+
+    # A replacement still requires its own editorial approval before sending.
+    held = run(config, send=True, collector=collect)
+    assert held["status"] == "delivery_incomplete"
+    assert calls["sends"] == []
+    _write_valid_reader_review(config)
+    assert run(config, send=True, collector=collect)["status"] == "provider_accepted"
+    assert len(calls["sends"]) == 1
+    assert run(config, collector=collect)["status"] == "no_new_disclosures"
+    state = State(Path(config["_storage"]) / "state.sqlite3")
+    for report_id, output, snapshot in withdrawn:
+        row = state.db.execute("SELECT status,payload FROM briefings WHERE id=?", (report_id,)).fetchone()
+        assert row["status"] == "withdrawn"
+        assert json.loads(row["payload"])["withdrawal"]["reason"] == "Synthetic review correction"
+        assert {path.name: path.read_bytes() for path in output.iterdir() if path.is_file()} == snapshot
+    state.close()
+
+
+def test_send_resolves_moved_annual_context_without_rewriting_reviewed_report(fixture_pipeline, monkeypatch):
+    config, calls, doc = fixture_pipeline
+    release = doc("release")
+    annual = doc("annual-context", "10-K")
+    annual.period = "2025-FY"
+    annual.published = "2026-02-01"
+    run(config, collector=lambda *a, **k: SourceResult(documents=[release, annual]))
+    state = State(Path(config["_storage"]) / "state.sqlite3")
+    row = state.outstanding()[0]
+    report = json.loads(row["payload"])
+    report["context_documents"] = [annual.to_dict()]
+    payload = json.dumps(report)
+    state.db.execute("UPDATE briefings SET payload=? WHERE id=?", (payload, row["id"]))
+    state.db.commit()
+    state.close()
+    _write_valid_reader_review(config)
+    output = Path(row["output_dir"])
+    reviewed = {name: (output / name).read_bytes() for name in (
+        "briefing.html", "briefing.txt", "reader-value-review.json", "reader-value-text-review.json",
+    )}
+    moved_path = output.parent / "restored-annual.html"
+    Path(annual.path).rename(moved_path)
+    recovered = replace(annual, path=str(moved_path), retrieved="2099-01-01T00:00:00+00:00")
+    prepared = []
+    module = sys.modules["servicing_brief.delivery"]
+    original_prepare = module.prepare_messages
+
+    def inspect_context(config, report, documents, output_dir):
+        context = report["context_documents"][0]
+        assert context["path"] == str(moved_path)
+        assert context["retrieved"] == annual.retrieved
+        assert sha256(Path(context["path"]).read_bytes()).hexdigest() == annual.content_hash
+        prepared.append(context)
+        return original_prepare(config, report, documents, output_dir)
+
+    monkeypatch.setattr(module, "prepare_messages", inspect_context)
+    result = run(config, send=True, collector=lambda *a, **k: SourceResult(documents=[recovered]))
+    assert result["status"] == "provider_accepted"
+    assert len(prepared) == 1 and len(calls["sends"]) == 1
+    state = State(Path(config["_storage"]) / "state.sqlite3")
+    assert state.db.execute("SELECT payload FROM briefings WHERE id=?", (row["id"],)).fetchone()[0] == payload
+    state.close()
+    assert {name: (output / name).read_bytes() for name in reviewed} == reviewed

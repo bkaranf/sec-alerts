@@ -159,6 +159,7 @@ def due(config: dict, state_db: Path, now: datetime | None = None) -> list[dict]
     if not times:
         return []
     now_local = _as_local(now, zone)
+    now_utc = now_local.astimezone(timezone.utc)
     catch_up = bool(settings.get("catch_up", True))
     try:
         catch_up_days = max(0, min(31, int(settings.get("catch_up_days", DEFAULT_CATCH_UP_DAYS))))
@@ -195,9 +196,14 @@ def due(config: dict, state_db: Path, now: datetime | None = None) -> list[dict]
         while day <= now_local.date():
             for configured_time in times:
                 occurrence = _occurrence(day, configured_time, zone)
-                if occurrence is None or occurrence > now_local:
+                if occurrence is None:
                     continue
-                if latest_success is not None and occurrence.astimezone(timezone.utc) <= latest_success:
+                occurrence_utc = occurrence.astimezone(timezone.utc)
+                # A shared ZoneInfo makes datetime compare wall clocks and
+                # ignore fold. Compare instants across the repeated DST hour.
+                if occurrence_utc > now_utc:
+                    continue
+                if latest_success is not None and occurrence_utc <= latest_success:
                     continue
                 key = _slot_key(occurrence, configured_time, zone)
                 exists = connection.execute(
@@ -211,10 +217,10 @@ def due(config: dict, state_db: Path, now: datetime | None = None) -> list[dict]
                         "run_key": key,
                         "timezone": zone.key,
                         "scheduled_local": occurrence.isoformat(),
-                        "scheduled_utc": occurrence.astimezone(timezone.utc).isoformat(),
+                        "scheduled_utc": occurrence_utc.isoformat(),
                         "local_date": occurrence.date().isoformat(),
                         "local_time": configured_time.strftime("%H:%M"),
-                        "catch_up": occurrence.date() < now_local.date() or occurrence.time() < now_local.time(),
+                        "catch_up": occurrence_utc < now_utc,
                     }
                 )
             day += timedelta(days=1)

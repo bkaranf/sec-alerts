@@ -133,7 +133,8 @@ def _run_locked(config, *, bootstrap=False, send=False, offline=False, collector
                 report["coverage"] = coverage
                 identity = {"event": changed_event, "documents": sorted((d.id, d.period, d.kind) for d in issuer_updates),
                             "design_version": report.get("design_version", "")}
-                report["id"] = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()[:24]
+                identity_hash = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()[:24]
+                report["id"] = state.next_report_id(identity_hash)
                 output = Path(config["_storage"]) / "reports" / report["id"]
                 refresh_report_review(report, output)
                 write_report(report, output)
@@ -167,6 +168,8 @@ def _run_locked(config, *, bootstrap=False, send=False, offline=False, collector
                 try:
                     report = json.loads(row["payload"])
                     docs = state.report_documents(row["id"])
+                    if report.get("context_documents"):
+                        report["context_documents"] = [state.restore_snapshot_paths(doc) for doc in report["context_documents"]]
                     value_review = refresh_report_review(report, Path(row["output_dir"]))
                     if value_review['status'] != 'approved':
                         deliveries.append({'report_id': row['id'], 'status': 'editorial_hold',
